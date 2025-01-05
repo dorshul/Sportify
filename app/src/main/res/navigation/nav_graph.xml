@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/studentsListFragment">
+    <fragment
+        android:id="@+id/studentsListFragment"
+        android:name="com.example.sportify.StudentsListFragment"
+        android:label="Students List" />
+    <fragment
+        android:id="@+id/addStudentFragment"
+        android:name="com.example.sportify.AddStudentFragment"
+        android:label="Add Student" />
+    <fragment
+        android:id="@+id/temp1"
+        android:name="com.example.sportify.Temp1"
+        android:label="temp1" />
+    <fragment
+        android:id="@+id/temp2"
+        android:name="com.example.sportify.Temp2"
+        android:label="temp2" />
+</navigation>
