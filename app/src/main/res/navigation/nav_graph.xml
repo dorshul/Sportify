@@ -13,11 +13,11 @@
         android:name="com.example.sportify.AddStudentFragment"
         android:label="Add Student" />
     <fragment
-        android:id="@+id/temp1"
-        android:name="com.example.sportify.Temp1"
-        android:label="temp1" />
-    <fragment
         android:id="@+id/temp2"
         android:name="com.example.sportify.Temp2"
-        android:label="temp2" />
+        android:label="temp1" />
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.sportify.ProfileFragment"
+        android:label="Profile" />
 </navigation>
