@@ -9,9 +9,9 @@
         android:name="com.example.sportify.StudentsListFragment"
         android:label="Students List" />
     <fragment
-        android:id="@+id/addStudentFragment"
-        android:name="com.example.sportify.AddStudentFragment"
-        android:label="Add Student" />
+        android:id="@+id/addGameFragment"
+        android:name="com.example.sportify.AddGameFragment"
+        android:label="Add Game" />
     <fragment
         android:id="@+id/temp2"
         android:name="com.example.sportify.Temp2"

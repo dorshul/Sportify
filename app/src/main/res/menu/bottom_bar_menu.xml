@@ -6,7 +6,7 @@
         android:icon="@android:drawable/ic_menu_search"
         android:title="Find games" />
     <item
-        android:id="@+id/addStudentFragment"
+        android:id="@+id/addGameFragment"
         android:icon="@android:drawable/ic_input_add"
         android:title="Create game" />
     <item
