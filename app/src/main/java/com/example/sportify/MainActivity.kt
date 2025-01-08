@@ -26,7 +26,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
 
         setContentView(R.layout.activity_main)
 
@@ -36,13 +35,8 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // TODO: 1 - Set up project for nav graphs ✅
-        // TODO: 2 - Set up nav_graph.xml and add Destinations ✅
-        // TODO: 3 - Set up MainActivity with nav host and nav controller ✅
-
         val navHostController: NavHostFragment? = supportFragmentManager.findFragmentById(R.id.main_nav_host) as? NavHostFragment
         navController = navHostController?.navController
-
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_bar)
         navController?.let { NavigationUI.setupWithNavController(bottomNavigationView, it) }
