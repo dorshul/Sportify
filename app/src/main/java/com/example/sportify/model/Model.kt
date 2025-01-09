@@ -3,6 +3,7 @@ package com.example.sportify.model
 import android.os.Looper
 import androidx.core.os.HandlerCompat
 import com.example.sportify.base.EmptyCallback
+import com.example.sportify.base.GamesCallback
 import com.example.sportify.base.StudentsCallback
 import com.example.sportify.model.dao.AppLocalDb
 import com.example.sportify.model.dao.AppLocalDbRepository
@@ -22,19 +23,35 @@ class Model private constructor() {
         executer.execute {
             val students = database.studentDao().getAllStudent()
 
-            Thread.sleep(4000)
-
             mainHandler.post {
                 callback(students)
             }
         }
     }
 
-    fun add(student: Student, callback: EmptyCallback) {
+    fun getAllGames(callback: GamesCallback) {
+        executer.execute {
+            val games = database.gamesDao().getAllGames()
+
+            mainHandler.post {
+                callback(games)
+            }
+        }
+    }
+
+    fun addStudent(student: Student, callback: EmptyCallback) {
         executer.execute {
             database.studentDao().insertAll(student)
 
-            Thread.sleep(4000)
+            mainHandler.post {
+                callback()
+            }
+        }
+    }
+
+    fun addGame(game: Game, callback: EmptyCallback) {
+        executer.execute {
+            database.gamesDao().insertAll(game)
 
             mainHandler.post {
                 callback()
@@ -45,8 +62,6 @@ class Model private constructor() {
     fun delete(student: Student, callback: EmptyCallback) {
         executer.execute {
             database.studentDao().delete(student)
-
-            Thread.sleep(4000)
 
             mainHandler.post {
                 callback()

@@ -19,7 +19,7 @@ class StudentsRecyclerAdapter(private var students: List<Student>?): RecyclerVie
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StudentViewHolder {
             val itemView = LayoutInflater.from(parent.context).inflate(
-                R.layout.student_list_row,
+                R.layout.public_game_card,
                 parent,
                 false
             )

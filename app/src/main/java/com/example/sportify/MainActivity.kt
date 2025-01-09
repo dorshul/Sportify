@@ -19,6 +19,9 @@ interface OnItemClickListener {
     fun onItemClick(position: Int)
     fun onItemClick(student: Student?)
 }
+interface OnGameClickListener {
+    fun onApprovalClicked(position: Int)
+}
 
 class MainActivity : AppCompatActivity() {
 

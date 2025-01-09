@@ -46,7 +46,7 @@ class AddStudentFragment : Fragment() {
             isChecked = false
         )
 
-        Model.shared.add(student) {
+        Model.shared.addStudent(student) {
             Navigation.findNavController(view).popBackStack()
         }
     }

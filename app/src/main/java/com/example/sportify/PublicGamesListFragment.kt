@@ -10,40 +10,36 @@ import android.widget.ImageButton
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.sportify.adapter.StudentsRecyclerAdapter
-import com.example.sportify.databinding.FragmentStudentsListBinding
-import com.example.sportify.model.Game
+import com.example.sportify.adapter.PublicGameRecyclerAdapter
+import com.example.sportify.databinding.FragmentPublicGamesListBinding
 import com.example.sportify.model.Model
+import com.example.sportify.model.Game
 import com.example.sportify.model.Student
 
+class PublicGamesListFragment : Fragment() {
 
-class StudentsListFragment : Fragment() {
+    private var binding: FragmentPublicGamesListBinding? = null
 
-    private var binding: FragmentStudentsListBinding? = null
-
-    var students: List<Student>? = null
-    var adapter: StudentsRecyclerAdapter? = null
+    var games: List<Game>? = null
+    var adapter: PublicGameRecyclerAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentStudentsListBinding.inflate(inflater, container, false)
+        binding = FragmentPublicGamesListBinding.inflate(inflater, container, false)
         Log.d("DEBUG", "binding $binding")
 
         binding?.recyclerView?.setHasFixedSize(true)
         val layoutManager = LinearLayoutManager(context)
         binding?.recyclerView?.layoutManager = layoutManager
 
-        adapter = StudentsRecyclerAdapter(students)
-        adapter?.listener = object : OnItemClickListener {
-            override fun onItemClick(position: Int) {
+        adapter = PublicGameRecyclerAdapter(games)
+        adapter?.listener = object : OnGameClickListener {
+            override fun onApprovalClicked(position: Int) {
                 Log.d("TAG", "On click Activity listener on position $position")
-            }
-
-            override fun onItemClick(student: Student?) {
-                // TODO
+                adapter?.onApprovalClicked(position)
             }
         }
         binding?.recyclerView?.adapter = adapter
@@ -58,17 +54,15 @@ class StudentsListFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        getAllStudents()
+        getAllGames()
     }
 
-    private fun getAllStudents() {
-
+    private fun getAllGames() {
         binding?.progressBar?.visibility = View.VISIBLE
-        Model.shared.getAllStudents {
-            students = it
-            adapter?.update(students)
+        Model.shared.getAllGames {
+            games = it
+            adapter?.update(games)
             adapter?.notifyDataSetChanged()
-
             binding?.progressBar?.visibility = View.GONE
         }
     }
