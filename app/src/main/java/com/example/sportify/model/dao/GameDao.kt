@@ -16,6 +16,9 @@ interface GameDao {
     @Query("SELECT * FROM Game WHERE userId =:userId")
     fun getGamesByUserId(userId: String): Game
 
+    @Query("SELECT * FROM Game WHERE id =:gameId")
+    fun getGamesById(gameId: String): Game
+
     @Query("SELECT * FROM Game WHERE userId !=:userId")
     fun getGamesOfOtherUsers(userId: String): Game
 

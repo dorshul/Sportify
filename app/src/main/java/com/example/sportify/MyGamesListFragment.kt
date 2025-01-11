@@ -6,35 +6,42 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.sportify.adapter.PublicGamesRecyclerAdapter
-import com.example.sportify.databinding.FragmentPublicGamesListBinding
+import com.example.sportify.adapter.MyGamesRecyclerAdapter
+import com.example.sportify.databinding.FragmentMyGamesListBinding
 import com.example.sportify.model.Model
 import com.example.sportify.model.Game
 
-class PublicGamesListFragment : Fragment() {
+class MyGamesListFragment : Fragment() {
 
-    private var binding: FragmentPublicGamesListBinding? = null
+    private var binding: FragmentMyGamesListBinding? = null
 
     var games: List<Game>? = null
-    var adapter: PublicGamesRecyclerAdapter? = null
+    var adapter: MyGamesRecyclerAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         // Inflate the layout for this fragment
-        binding = FragmentPublicGamesListBinding.inflate(inflater, container, false)
+        binding = FragmentMyGamesListBinding.inflate(inflater, container, false)
 
         binding?.recyclerView?.setHasFixedSize(true)
         val layoutManager = LinearLayoutManager(context)
         binding?.recyclerView?.layoutManager = layoutManager
 
-        adapter = PublicGamesRecyclerAdapter(games)
-        adapter?.listener = object : OnPublicGameClickListener {
-            override fun onApprovalClicked(position: Int) {
-                Log.d("TAG", "On click Activity listener on position $position")
-                adapter?.onApprovalClicked(position)
+        adapter = MyGamesRecyclerAdapter(games)
+        adapter?.listener = object : OnMyGameClickListener {
+            override fun onEditClick(game: Game?) {
+                game?.let {
+                    val bundle = Bundle().apply {
+                        putString("gameId", game.id) // Pass the argument dynamically
+                    }
+                    binding?.root?.let {
+                        Navigation.findNavController(it).navigate(R.id.action_myGamesListFragment_to_addGameFragment, bundle)
+                    }
+                }
             }
         }
         binding?.recyclerView?.adapter = adapter

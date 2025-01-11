@@ -39,6 +39,16 @@ class Model private constructor() {
         }
     }
 
+    fun getGameById(gameId: String, callback: (Game) -> Unit) {
+        executer.execute {
+            val game = database.gamesDao().getGamesById(gameId)
+
+            mainHandler.post {
+                callback(game)
+            }
+        }
+    }
+
     fun addStudent(student: Student, callback: EmptyCallback) {
         executer.execute {
             database.studentDao().insertAll(student)
@@ -59,7 +69,17 @@ class Model private constructor() {
         }
     }
 
-    fun delete(student: Student, callback: EmptyCallback) {
+    fun deleteGame(game: Game, callback: EmptyCallback) {
+        executer.execute {
+            database.gamesDao().delete(game)
+
+            mainHandler.post {
+                callback()
+            }
+        }
+    }
+
+    fun deleteStudent(student: Student, callback: EmptyCallback) {
         executer.execute {
             database.studentDao().delete(student)
 

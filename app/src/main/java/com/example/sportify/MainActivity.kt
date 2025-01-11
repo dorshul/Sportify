@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
+import com.example.sportify.model.Game
 import com.example.sportify.model.Student
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -19,8 +20,13 @@ interface OnItemClickListener {
     fun onItemClick(position: Int)
     fun onItemClick(student: Student?)
 }
-interface OnGameClickListener {
+
+interface OnPublicGameClickListener {
     fun onApprovalClicked(position: Int)
+}
+
+interface OnMyGameClickListener {
+    fun onEditClick(game: Game?)
 }
 
 class MainActivity : AppCompatActivity() {

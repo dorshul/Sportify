@@ -32,16 +32,6 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/user_details"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Dor, 20"
-                    android:textColor="#4CAF50"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
                 <ImageView
                     android:id="@+id/location_icon"
                     android:layout_width="20dp"
@@ -53,10 +43,28 @@
                     android:id="@+id/game_location"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:layout_marginStart="4dp"
-                    android:text="Tel Aviv, Yad Eliyaho, 17"
+                    android:text=""
                     android:textColor="@color/black"
                     android:textSize="14sp" />
+                <ImageButton
+                    android:id="@+id/edit_game_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="16dp"
+                    android:src="@drawable/ic_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView" />
+                <ImageButton
+                    android:id="@+id/delete_game_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_delete"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    app:layout_constraintBottom_toBottomOf="@+id/imageView"
+                    app:layout_constraintEnd_toEndOf="@+id/imageView" />
             </LinearLayout>
 
             <!-- Image Section -->
@@ -106,12 +114,13 @@
                     android:textSize="14sp" />
                 <ImageButton
                     style="@style/Widget.Material3.Button.ElevatedButton.Icon"
-                    android:id="@+id/approval_icon"
+                    android:id="@+id/approvals_icon"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
+                    android:clickable="false"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Approve game button"
-                    android:src="@drawable/ic_thumb_up" />
+                    android:src="@drawable/ic_group" />
 
                 <TextView
                     android:id="@+id/approvals_count"

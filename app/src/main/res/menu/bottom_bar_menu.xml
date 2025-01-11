@@ -10,7 +10,7 @@
         android:icon="@android:drawable/ic_input_add"
         android:title="Create game" />
     <item
-        android:id="@+id/temp2"
+        android:id="@+id/myGamesListFragment"
         android:icon="@drawable/ic_widgets"
         android:title="My games" />
     <item
