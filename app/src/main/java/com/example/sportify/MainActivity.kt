@@ -13,13 +13,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
 import com.example.sportify.model.Game
-import com.example.sportify.model.Student
 import com.google.android.material.bottomnavigation.BottomNavigationView
-
-interface OnItemClickListener {
-    fun onItemClick(position: Int)
-    fun onItemClick(student: Student?)
-}
 
 interface OnPublicGameClickListener {
     fun onApprovalClicked(position: Int)

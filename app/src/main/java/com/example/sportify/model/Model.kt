@@ -4,7 +4,6 @@ import android.os.Looper
 import androidx.core.os.HandlerCompat
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
-import com.example.sportify.base.StudentsCallback
 import com.example.sportify.model.dao.AppLocalDb
 import com.example.sportify.model.dao.AppLocalDbRepository
 import java.util.concurrent.Executors
@@ -17,16 +16,6 @@ class Model private constructor() {
 
     companion object {
         val shared = Model()
-    }
-
-    fun getAllStudents(callback: StudentsCallback) {
-        executer.execute {
-            val students = database.studentDao().getAllStudent()
-
-            mainHandler.post {
-                callback(students)
-            }
-        }
     }
 
     fun getAllGames(callback: GamesCallback) {
@@ -49,16 +38,6 @@ class Model private constructor() {
         }
     }
 
-    fun addStudent(student: Student, callback: EmptyCallback) {
-        executer.execute {
-            database.studentDao().insertAll(student)
-
-            mainHandler.post {
-                callback()
-            }
-        }
-    }
-
     fun addGame(game: Game, callback: EmptyCallback) {
         executer.execute {
             database.gamesDao().insertAll(game)
@@ -72,16 +51,6 @@ class Model private constructor() {
     fun deleteGame(game: Game, callback: EmptyCallback) {
         executer.execute {
             database.gamesDao().delete(game)
-
-            mainHandler.post {
-                callback()
-            }
-        }
-    }
-
-    fun deleteStudent(student: Student, callback: EmptyCallback) {
-        executer.execute {
-            database.studentDao().delete(student)
 
             mainHandler.post {
                 callback()
