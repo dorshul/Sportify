@@ -20,7 +20,7 @@
         app:layout_constraintBottom_toTopOf="@+id/profile_fragment_logout_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView">
+        app:layout_constraintTop_toBottomOf="@+id/user_picture">
 
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
@@ -116,11 +116,13 @@
     </LinearLayout>
 
     <ImageView
-        android:id="@+id/imageView"
+        android:id="@+id/user_picture"
         android:layout_width="0dp"
         android:layout_height="242dp"
+        android:layout_marginStart="32dp"
         android:layout_marginTop="64dp"
-        android:scaleType="centerInside"
+        android:layout_marginEnd="32dp"
+        android:scaleType="fitCenter"
         android:src="@drawable/avatar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
@@ -128,15 +130,15 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
-        android:id="@+id/imageButton2"
+        android:id="@+id/edit_user_picture_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="8dp"
-        android:src="@drawable/ic_edit"
+        android:layout_marginEnd="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:layout_constraintBottom_toBottomOf="@+id/imageView"
-        app:layout_constraintEnd_toEndOf="@+id/imageView" />
+        android:src="@drawable/ic_edit"
+        app:layout_constraintBottom_toBottomOf="@+id/user_picture"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/user_picture" />
 
     <Button
         android:id="@+id/profile_fragment_logout_button"

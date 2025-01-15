@@ -25,7 +25,7 @@
             android:layout_height="200dp"
             android:layout_marginBottom="16dp"
             android:contentDescription="Take a picture"
-            android:scaleType="fitXY"
+            android:scaleType="fitCenter"
             android:src="@drawable/take_picture" />
 
         <com.google.android.material.textfield.TextInputLayout
