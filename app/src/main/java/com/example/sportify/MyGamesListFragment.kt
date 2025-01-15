@@ -35,11 +35,9 @@ class MyGamesListFragment : Fragment() {
         adapter?.listener = object : OnMyGameClickListener {
             override fun onEditClick(game: Game?) {
                 game?.let {
-                    val bundle = Bundle().apply {
-                        putString("gameId", game.id) // Pass the argument dynamically
-                    }
+                    val action = MyGamesListFragmentDirections.actionMyGamesListFragmentToAddGameFragment(it.id)
                     binding?.root?.let {
-                        Navigation.findNavController(it).navigate(R.id.action_myGamesListFragment_to_addGameFragment, bundle)
+                        Navigation.findNavController(it).navigate(action)
                     }
                 }
             }

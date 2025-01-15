@@ -58,5 +58,8 @@ class MyGamesViewHolder(
         deleteImageButton?.apply {
             tag = position
         }
+        editImageButton?.apply {
+            tag = position
+        }
     }
 }

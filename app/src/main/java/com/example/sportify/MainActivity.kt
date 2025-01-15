@@ -43,5 +43,32 @@ class MainActivity : AppCompatActivity() {
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_bar)
         navController?.let { NavigationUI.setupWithNavController(bottomNavigationView, it) }
+        bottomNavigationView.setOnItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.myGamesListFragment -> {
+                    navController?.navigate(
+                        R.id.myGamesListFragment,
+                        null,
+                        androidx.navigation.NavOptions.Builder()
+                            .setPopUpTo(R.id.addGameFragment, true) // Clear AddGameFragment from stack
+                            .build()
+                    )
+                    true
+                }
+                R.id.addGameFragment -> {
+                    navController?.navigate(R.id.addGameFragment)
+                    true
+                }
+                R.id.publicGamesListFragment -> {
+                    navController?.navigate(R.id.publicGamesListFragment)
+                    true
+                }
+                R.id.profileFragment -> {
+                    navController?.navigate(R.id.profileFragment)
+                    true
+                }
+                else -> false
+            }
+        }
     }
 }
