@@ -6,6 +6,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
+import com.example.sportify.databinding.MyGameCardBinding
+import com.example.sportify.databinding.PublicGameCardBinding
 import com.example.sportify.model.Game
 
 class PublicGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.Adapter<PublicGamesViewHolder>() {
@@ -19,12 +21,9 @@ class PublicGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.A
     override fun getItemCount(): Int = games?.size ?: 0
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PublicGamesViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(
-            R.layout.public_game_card,
-            parent,
-            false
-        )
-        return PublicGamesViewHolder(itemView, listener)
+        val inflator = LayoutInflater.from(parent.context)
+        val binding = PublicGameCardBinding.inflate(inflator, parent, false)
+        return PublicGamesViewHolder(binding, listener)
     }
 
     override fun onBindViewHolder(holder: PublicGamesViewHolder, position: Int) {

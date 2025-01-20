@@ -16,6 +16,7 @@ import androidx.navigation.Navigation
 import com.example.sportify.databinding.FragmentAddGameBinding
 import com.example.sportify.model.Model
 import com.example.sportify.model.Game
+import com.squareup.picasso.Picasso
 import java.util.UUID
 
 class AddGameFragment : Fragment() {
@@ -23,6 +24,7 @@ class AddGameFragment : Fragment() {
     private var binding: FragmentAddGameBinding? = null
     var game: Game? = null
     var previousBitmap: Bitmap? = null
+    private var didSetGameImage = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -36,6 +38,7 @@ class AddGameFragment : Fragment() {
             if (bitmap != null) {
                 // Update the ImageView with the new image and save it as the previous image
                 previousBitmap = bitmap
+                didSetGameImage = true
                 binding?.takePictureImageView?.setImageBitmap(bitmap)
             } else {
                 // Camera was closed, restore the previous image
@@ -47,13 +50,20 @@ class AddGameFragment : Fragment() {
         }
         val args = AddGameFragmentArgs.fromBundle(requireArguments())
         val gameId = args.gameId
-//        val gameId = arguments?.let { AddGameFragmentArgs.fromBundle(requireArguments()).gameId }
         if (gameId != null) {
             Model.shared.getGameById(gameId ?: "") {
                 game = it
                 binding?.descriptionText?.text = Editable.Factory.getInstance().newEditable(game?.description ?: "")
                 binding?.locationText?.text = Editable.Factory.getInstance().newEditable(game?.location ?: "")
                 binding?.numberOfPlayers?.text = Editable.Factory.getInstance().newEditable(game?.numberOfPlayers.toString() ?: "")
+                game?.pictureUrl?.let {
+                    if (it.isNotBlank()) {
+                        Picasso.get()
+                            .load(it)
+                            .placeholder(R.drawable.take_picture)
+                            .into(binding?.takePictureImageView)
+                    }
+                }
             }
         }
 
@@ -72,9 +82,19 @@ class AddGameFragment : Fragment() {
             isApproved = game?.isApproved ?: false,
         )
 
+        if (didSetGameImage) {
+            binding?.takePictureImageView?.isDrawingCacheEnabled = true
+            binding?.takePictureImageView?.buildDrawingCache()
+            val bitmap = (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
 
-        Model.shared.addGame(game!!) {
-            Navigation.findNavController(view).popBackStack()
+            Model.shared.addGame(game!!, bitmap) {
+                Navigation.findNavController(view).popBackStack()
+            }
+        } else {
+            Model.shared.addGame(game!!, null) {
+                Navigation.findNavController(view).popBackStack()
+            }
         }
+
     }
 }

@@ -9,6 +9,7 @@ import com.example.sportify.MyGamesListFragment
 import com.example.sportify.OnMyGameClickListener
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
+import com.example.sportify.databinding.MyGameCardBinding
 import com.example.sportify.model.Game
 
 class MyGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.Adapter<MyGamesViewHolder>() {
@@ -22,12 +23,9 @@ class MyGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.Adapt
     override fun getItemCount(): Int = games?.size ?: 0
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyGamesViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(
-            R.layout.my_game_card,
-            parent,
-            false
-        )
-        return MyGamesViewHolder(itemView, listener)
+        val inflator = LayoutInflater.from(parent.context)
+        val binding = MyGameCardBinding.inflate(inflator, parent, false)
+        return MyGamesViewHolder(binding, listener)
     }
 
     override fun onBindViewHolder(holder: MyGamesViewHolder, position: Int) {

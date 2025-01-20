@@ -62,11 +62,11 @@
             <!-- Image Section -->
             <ImageView
                 android:id="@+id/game_picture"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="180dp"
                 android:layout_marginTop="8dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/take_picture" />
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_broken_image" />
 
             <!-- Description Section -->
             <TextView

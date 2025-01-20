@@ -8,30 +8,19 @@ import androidx.navigation.Navigation
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnMyGameClickListener
 import com.example.sportify.R
+import com.example.sportify.databinding.MyGameCardBinding
 import com.example.sportify.model.Game
 import com.example.sportify.model.Model
+import com.squareup.picasso.Picasso
 
 class MyGamesViewHolder(
-    itemView: View,
+    private val binding: MyGameCardBinding,
     listener: OnMyGameClickListener?
-): RecyclerView.ViewHolder(itemView) {
-    private var descriptionTextView: TextView? = null
-    private var locationTextView: TextView? = null
-    private var weatherTextView: TextView? = null
-    private var approvalTextView: TextView? = null
-    private var deleteImageButton: ImageButton? = null
-    private var editImageButton: ImageButton? = null
-
+): RecyclerView.ViewHolder(binding.root) {
     private var game: Game? = null
 
     init {
-        descriptionTextView = itemView.findViewById(R.id.game_description)
-        locationTextView = itemView.findViewById(R.id.game_location)
-        weatherTextView = itemView.findViewById(R.id.game_weather)
-        approvalTextView = itemView.findViewById(R.id.approvals_count)
-        deleteImageButton = itemView.findViewById((R.id.delete_game_button))
-        editImageButton = itemView.findViewById((R.id.edit_game_button))
-        deleteImageButton?.apply {
+        binding.deleteGameButton?.apply {
             setOnClickListener {
                 (tag as? Int)?.let { tag ->
                     Model.shared.deleteGame(game!!) {
@@ -41,7 +30,7 @@ class MyGamesViewHolder(
             }
         }
 
-        editImageButton?.apply {
+        binding.editGameButton?.apply {
             setOnClickListener {
                 listener?.onEditClick(game) // Notify parent about the edit click
             }
@@ -50,15 +39,24 @@ class MyGamesViewHolder(
 
     fun bind(game: Game?, position: Int) {
         this.game = game
-        descriptionTextView?.text = game?.description ?: ""
-        locationTextView?.text = game?.location
-        weatherTextView?.text = "25°C ☀️"
-        approvalTextView?.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
-        deleteImageButton?.apply {
+        binding.gameDescription.text = game?.description ?: ""
+        binding.gameLocation.text = game?.location
+        binding.gameWeather.text = "25°C ☀️"
+        binding.approvalsCount.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
+        binding.deleteGameButton.apply {
             tag = position
         }
-        editImageButton?.apply {
+        binding.editGameButton.apply {
             tag = position
         }
+        game?.pictureUrl?.let {
+            if (it.isNotBlank()) {
+                Picasso.get()
+                    .load(it)
+                    .placeholder(R.drawable.ic_broken_image)
+                    .into(binding.gamePicture)
+            }
+        }
+
     }
 }
