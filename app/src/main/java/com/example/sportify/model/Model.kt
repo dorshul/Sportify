@@ -14,47 +14,53 @@ class Model private constructor() {
     private val executer = Executors.newSingleThreadExecutor()
     private var mainHandler = HandlerCompat.createAsync(Looper.getMainLooper())
 
+    private val firebaseModel = FirebaseModel()
+
     companion object {
         val shared = Model()
     }
 
     fun getAllGames(callback: GamesCallback) {
-        executer.execute {
-            val games = database.gamesDao().getAllGames()
-
-            mainHandler.post {
-                callback(games)
-            }
-        }
+//        executer.execute {
+//            val games = database.gamesDao().getAllGames()
+//
+//            mainHandler.post {
+//                callback(games)
+//            }
+//        }
+        firebaseModel.getAllGames(callback)
     }
 
-    fun getGameById(gameId: String, callback: (Game) -> Unit) {
-        executer.execute {
-            val game = database.gamesDao().getGamesById(gameId)
-
-            mainHandler.post {
-                callback(game)
-            }
-        }
+    fun getGameById(gameId: String, callback: (Game?) -> Unit) {
+//        executer.execute {
+//            val game = database.gamesDao().getGamesById(gameId)
+//
+//            mainHandler.post {
+//                callback(game)
+//            }
+//        }
+        firebaseModel.getGameById(gameId, callback)
     }
 
     fun addGame(game: Game, callback: EmptyCallback) {
-        executer.execute {
-            database.gamesDao().insertAll(game)
-
-            mainHandler.post {
-                callback()
-            }
-        }
+//        executer.execute {
+//            database.gamesDao().insertAll(game)
+//
+//            mainHandler.post {
+//                callback()
+//            }
+//        }
+        firebaseModel.addGame(game, callback)
     }
 
-    fun deleteGame(game: Game, callback: EmptyCallback) {
-        executer.execute {
-            database.gamesDao().delete(game)
-
-            mainHandler.post {
-                callback()
-            }
-        }
+    fun deleteGame(game: Game, callback: (Boolean) -> Unit) {
+//        executer.execute {
+//            database.gamesDao().delete(game)
+//
+//            mainHandler.post {
+//                callback()
+//            }
+//        }
+        firebaseModel.deleteGame(game, callback)
     }
 }

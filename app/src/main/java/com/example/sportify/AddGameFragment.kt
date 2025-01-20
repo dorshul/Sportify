@@ -51,7 +51,6 @@ class AddGameFragment : Fragment() {
         if (gameId != null) {
             Model.shared.getGameById(gameId ?: "") {
                 game = it
-                Log.d("DEBUG", "gameId $gameId")
                 binding?.descriptionText?.text = Editable.Factory.getInstance().newEditable(game?.description ?: "")
                 binding?.locationText?.text = Editable.Factory.getInstance().newEditable(game?.location ?: "")
                 binding?.numberOfPlayers?.text = Editable.Factory.getInstance().newEditable(game?.numberOfPlayers.toString() ?: "")
@@ -72,6 +71,7 @@ class AddGameFragment : Fragment() {
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
             isApproved = game?.isApproved ?: false,
         )
+
 
         Model.shared.addGame(game!!) {
             Navigation.findNavController(view).popBackStack()

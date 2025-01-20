@@ -31,7 +31,6 @@ class MyGamesViewHolder(
         approvalTextView = itemView.findViewById(R.id.approvals_count)
         deleteImageButton = itemView.findViewById((R.id.delete_game_button))
         editImageButton = itemView.findViewById((R.id.edit_game_button))
-        Log.d("DEBUG", "game $game")
         deleteImageButton?.apply {
             setOnClickListener {
                 (tag as? Int)?.let { tag ->
