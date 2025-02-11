@@ -9,6 +9,7 @@ import com.example.sportify.base.Constants
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
 import com.example.sportify.utils.extensions.toFirebaseTimestamp
+import com.google.firebase.firestore.DocumentChange
 
 class FirebaseModel {
     private val database = Firebase.firestore
@@ -75,4 +76,32 @@ class FirebaseModel {
                 }
             }
     }
+
+    fun listenForGameChanges(callback: (List<Game>, List<Game>) -> Unit) {
+        database.collection(Constants.Collections.GAMES)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("Firestore", "Error listening to Game changes", error)
+                    return@addSnapshotListener
+                }
+
+                val updatedGames = mutableListOf<Game>()
+                val deletedGames = mutableListOf<Game>()
+
+                snapshot?.documentChanges?.forEach { change ->
+                    val Game = Game.fromJSON(change.document.data)
+                    when (change.type) {
+                        DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
+                            updatedGames.add(Game)
+                        }
+                        DocumentChange.Type.REMOVED -> {
+                            deletedGames.add(Game)
+                        }
+                    }
+                }
+
+                callback(updatedGames, deletedGames)
+            }
+    }
+
 }

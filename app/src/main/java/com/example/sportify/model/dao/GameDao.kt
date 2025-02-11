@@ -1,5 +1,6 @@
 package com.example.sportify.model.dao
 
+import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
@@ -11,7 +12,7 @@ import com.example.sportify.model.Game
 interface GameDao {
 
     @Query("SELECT * FROM Game ORDER BY userId")
-    fun getAllGames(): List<Game>
+    fun getAllGames(): LiveData<List<Game>>
 
     @Query("SELECT * FROM Game WHERE userId =:userId")
     fun getGamesByUserId(userId: String): Game

@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,7 +19,7 @@ class MyGamesListFragment : Fragment() {
 
     private var binding: FragmentMyGamesListBinding? = null
 
-    private var viewModel: MyGamesListViewModel? = null
+    private val viewModel: MyGamesListViewModel by viewModels()
     private var adapter: MyGamesRecyclerAdapter? = null
 
     override fun onCreateView(
@@ -27,13 +28,24 @@ class MyGamesListFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = FragmentMyGamesListBinding.inflate(inflater, container, false)
-        viewModel = ViewModelProvider(this)[MyGamesListViewModel::class.java]
 
         binding?.recyclerView?.setHasFixedSize(true)
         val layoutManager = LinearLayoutManager(context)
         binding?.recyclerView?.layoutManager = layoutManager
 
-        adapter = MyGamesRecyclerAdapter(viewModel?.games)
+        adapter = MyGamesRecyclerAdapter(viewModel.games.value)
+        viewModel.games.observe(viewLifecycleOwner) {
+            adapter?.update(it)
+            adapter?.notifyDataSetChanged()
+            binding?.progressBar?.visibility = View.GONE
+        }
+        binding?.swipeToRefresh?.setOnRefreshListener {
+            viewModel.refreshAllGames()
+        }
+        Model.shared.loadingState.observe(viewLifecycleOwner) { state ->
+            binding?.swipeToRefresh?.isRefreshing = state == Model.LoadingState.LOADING
+        }
+
         adapter?.listener = object : OnMyGameClickListener {
             override fun onEditClick(game: Game?) {
                 game?.let {
@@ -56,16 +68,11 @@ class MyGamesListFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        getAllGames()
+        Model.shared.refreshAllGames()
     }
 
     private fun getAllGames() {
         binding?.progressBar?.visibility = View.VISIBLE
-        Model.shared.getAllGames {
-            viewModel?.games = it
-            adapter?.update(viewModel?.games)
-            adapter?.notifyDataSetChanged()
-            binding?.progressBar?.visibility = View.GONE
-        }
+        Model.shared.refreshAllGames()
     }
 }

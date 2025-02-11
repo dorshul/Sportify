@@ -24,7 +24,7 @@ class MyGamesViewHolder(
             setOnClickListener {
                 (tag as? Int)?.let { tag ->
                     Model.shared.deleteGame(game!!) {
-                        Navigation.findNavController(itemView).popBackStack()
+                        Model.shared.refreshAllGames()
                     }
                 }
             }

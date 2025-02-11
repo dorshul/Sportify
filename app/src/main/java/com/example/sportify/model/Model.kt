@@ -3,6 +3,8 @@ package com.example.sportify.model
 import android.graphics.Bitmap
 import android.os.Looper
 import androidx.core.os.HandlerCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
 import com.example.sportify.model.dao.AppLocalDb
@@ -11,9 +13,16 @@ import java.util.concurrent.Executors
 
 class Model private constructor() {
 
+    enum class LoadingState {
+        LOADING,
+        LOADED
+    }
+
     private val database: AppLocalDbRepository = AppLocalDb.database
     private val executor = Executors.newSingleThreadExecutor()
     private var mainHandler = HandlerCompat.createAsync(Looper.getMainLooper())
+    val games: LiveData<List<Game>> = database.gamesDao().getAllGames()
+    val loadingState: MutableLiveData<LoadingState> = MutableLiveData<LoadingState>()
 
     private val firebaseModel = FirebaseModel()
     private val cloudinaryModel = CloudinaryModel()
@@ -21,8 +30,13 @@ class Model private constructor() {
     companion object {
         val shared = Model()
     }
+    init {
+        listenForGameChanges() // Start real-time Firestore sync
+    }
 
-    fun getAllGames(callback: GamesCallback) {
+
+    fun refreshAllGames() {
+        loadingState.postValue(LoadingState.LOADING)
         val lastUpdated: Long = Game.lastUpdated
         firebaseModel.getAllGames(lastUpdated) { games ->
             executor.execute {
@@ -36,10 +50,7 @@ class Model private constructor() {
                     }
                 }
                 Game.lastUpdated = currentTime
-                val savedStudents = database.gamesDao().getAllGames()
-                mainHandler.post {
-                    callback(savedStudents)
-                }
+                loadingState.postValue(LoadingState.LOADED)
             }
         }
     }
@@ -69,6 +80,26 @@ class Model private constructor() {
     }
 
     fun deleteGame(game: Game, callback: (Boolean) -> Unit) {
-        firebaseModel.deleteGame(game, callback)
+        executor.execute {
+            database.gamesDao().delete(game)
+
+            mainHandler.post {
+                firebaseModel.deleteGame(game, callback)
+            }
+        }
+    }
+
+    private fun listenForGameChanges() {
+        firebaseModel.listenForGameChanges{ updatedGames, deletedGames ->
+            executor.execute {
+                // Insert or update Games in Room
+                database.gamesDao().insertAll(*updatedGames.toTypedArray())
+
+                // Delete Games from Room if they were removed in Firebase
+                deletedGames.forEach { game ->
+                    database.gamesDao().delete(game)
+                }
+            }
+        }
     }
 }
