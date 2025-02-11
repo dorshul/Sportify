@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.sportify.adapter.PublicGamesRecyclerAdapter
 import com.example.sportify.databinding.FragmentPublicGamesListBinding
@@ -16,8 +17,8 @@ class PublicGamesListFragment : Fragment() {
 
     private var binding: FragmentPublicGamesListBinding? = null
 
-    var games: List<Game>? = null
-    var adapter: PublicGamesRecyclerAdapter? = null
+    private var viewModel: PublicGamesListViewModel? = null
+    private var adapter: PublicGamesRecyclerAdapter? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -25,12 +26,13 @@ class PublicGamesListFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         binding = FragmentPublicGamesListBinding.inflate(inflater, container, false)
+        viewModel = ViewModelProvider(this)[PublicGamesListViewModel::class.java]
 
         binding?.recyclerView?.setHasFixedSize(true)
         val layoutManager = LinearLayoutManager(context)
         binding?.recyclerView?.layoutManager = layoutManager
 
-        adapter = PublicGamesRecyclerAdapter(games)
+        adapter = PublicGamesRecyclerAdapter(viewModel?.games)
         adapter?.listener = object : OnPublicGameClickListener {
             override fun onApprovalClicked(position: Int) {
                 Log.d("TAG", "On click Activity listener on position $position")
@@ -55,8 +57,8 @@ class PublicGamesListFragment : Fragment() {
     private fun getAllGames() {
         binding?.progressBar?.visibility = View.VISIBLE
         Model.shared.getAllGames {
-            games = it
-            adapter?.update(games)
+            viewModel?.games = it
+            adapter?.update(it)
             adapter?.notifyDataSetChanged()
             binding?.progressBar?.visibility = View.GONE
         }
