@@ -2,7 +2,6 @@ package com.example.sportify.model
 
 import android.graphics.Bitmap
 import android.os.Looper
-import android.util.Log
 import androidx.core.os.HandlerCompat
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
@@ -13,12 +12,8 @@ import java.util.concurrent.Executors
 class Model private constructor() {
 
     private val database: AppLocalDbRepository = AppLocalDb.database
-    private val executer = Executors.newSingleThreadExecutor()
+    private val executor = Executors.newSingleThreadExecutor()
     private var mainHandler = HandlerCompat.createAsync(Looper.getMainLooper())
-    enum class Storage {
-        FIREBASE,
-        CLOUDINARY
-    }
 
     private val firebaseModel = FirebaseModel()
     private val cloudinaryModel = CloudinaryModel()
@@ -28,40 +23,34 @@ class Model private constructor() {
     }
 
     fun getAllGames(callback: GamesCallback) {
-//        executer.execute {
-//            val games = database.gamesDao().getAllGames()
-//
-//            mainHandler.post {
-//                callback(games)
-//            }
-//        }
-        firebaseModel.getAllGames(callback)
+        val lastUpdated: Long = Game.lastUpdated
+        firebaseModel.getAllGames(lastUpdated) { games ->
+            executor.execute {
+                var currentTime = lastUpdated
+                for (game in games) {
+                    database.gamesDao().insertAll(game)
+                    game.lastUpdated?.let {
+                        if (currentTime < it) {
+                            currentTime = it
+                        }
+                    }
+                }
+                Game.lastUpdated = currentTime
+                val savedStudents = database.gamesDao().getAllGames()
+                mainHandler.post {
+                    callback(savedStudents)
+                }
+            }
+        }
     }
 
     fun getGameById(gameId: String, callback: (Game?) -> Unit) {
-//        executer.execute {
-//            val game = database.gamesDao().getGamesById(gameId)
-//
-//            mainHandler.post {
-//                callback(game)
-//            }
-//        }
         firebaseModel.getGameById(gameId, callback)
     }
 
     fun addGame(game: Game, image: Bitmap?, callback: EmptyCallback) {
-        Log.d("DEBUG", "jeyyyyyyyyyyyyyyyyyyyyyyyyy")
-//        executer.execute {
-//            database.gamesDao().insertAll(game)
-//
-//            mainHandler.post {
-//                callback()
-//            }
-//        }
-//        firebaseModel.addGame(game, callback)
         firebaseModel.addGame(game) {
             image?.let {
-                Log.d("DEBUG", "sdgfsdgfg")
                 cloudinaryModel.uploadImage(
                     bitmap = image,
                     gameId = game.id,
@@ -80,13 +69,6 @@ class Model private constructor() {
     }
 
     fun deleteGame(game: Game, callback: (Boolean) -> Unit) {
-//        executer.execute {
-//            database.gamesDao().delete(game)
-//
-//            mainHandler.post {
-//                callback()
-//            }
-//        }
         firebaseModel.deleteGame(game, callback)
     }
 }

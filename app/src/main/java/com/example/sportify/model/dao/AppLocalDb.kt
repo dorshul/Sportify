@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import com.example.sportify.base.MyApplication
 import com.example.sportify.model.Game
 
-@Database(entities = [Game::class], version = 5)
+@Database(entities = [Game::class], version = 6)
 abstract class AppLocalDbRepository: RoomDatabase() {
     abstract fun gamesDao(): GameDao
 }

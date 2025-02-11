@@ -1,5 +1,6 @@
 package com.example.sportify.model
 
+import android.util.Log
 import com.google.firebase.firestore.firestoreSettings
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.memoryCacheSettings
@@ -7,6 +8,7 @@ import com.google.firebase.ktx.Firebase
 import com.example.sportify.base.Constants
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
+import com.example.sportify.utils.extensions.toFirebaseTimestamp
 
 class FirebaseModel {
     private val database = Firebase.firestore
@@ -18,8 +20,11 @@ class FirebaseModel {
         database.firestoreSettings = settings
     }
 
-    fun getAllGames(callback: GamesCallback) {
-        database.collection(Constants.Collections.GAMES).get().addOnCompleteListener {
+    fun getAllGames(sinceLastUpdated: Long, callback: GamesCallback) {
+        database.collection(Constants.Collections.GAMES)
+            .whereGreaterThanOrEqualTo(Game.LAST_UPDATED, sinceLastUpdated.toFirebaseTimestamp)
+            .get()
+            .addOnCompleteListener {
             when (it.isSuccessful) {
                 true -> {
                     val games: MutableList<Game> = mutableListOf()
@@ -54,6 +59,9 @@ class FirebaseModel {
         database.collection(Constants.Collections.GAMES).document(game.id).set(game.json)
             .addOnCompleteListener {
                 callback()
+            }
+            .addOnFailureListener {
+                Log.d("TAG", it.toString() + it.message)
             }
     }
 
