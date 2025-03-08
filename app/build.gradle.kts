@@ -49,7 +49,6 @@ android {
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -59,14 +58,16 @@ dependencies {
     implementation(libs.androidx.swiperefreshlayout)
 
     implementation(platform(libs.firebase.bom))
-
     implementation(libs.androidx.room.runtime)
     implementation(libs.firebase.firestore)
     implementation(libs.picasso)
     implementation(libs.cloudinary.android)
     kapt(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
 
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
 
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui )

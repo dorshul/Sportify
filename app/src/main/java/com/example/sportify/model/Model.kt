@@ -60,14 +60,17 @@ class Model private constructor() {
     }
 
     fun addGame(game: Game, image: Bitmap?, callback: EmptyCallback) {
-        firebaseModel.addGame(game) {
+        // Set the user ID to the current authenticated user
+        val gameWithUserId = game.copy(userId = AuthManager.shared.userId)
+
+        firebaseModel.addGame(gameWithUserId) {
             image?.let {
                 cloudinaryModel.uploadImage(
                     bitmap = image,
                     gameId = game.id,
                     onSuccess = { uri ->
                         if (!uri.isNullOrBlank()) {
-                            val gm = game.copy(pictureUrl = uri)
+                            val gm = gameWithUserId.copy(pictureUrl = uri)
                             firebaseModel.addGame(gm, callback)
                         } else {
                             callback()
@@ -88,6 +91,16 @@ class Model private constructor() {
             }
         }
     }
+
+    fun getGamesForCurrentUser(): LiveData<List<Game>> {
+        val userId = AuthManager.shared.userId
+        return if (userId.isNotEmpty()) {
+            database.gamesDao().getGamesByUserIdLiveData(userId)
+        } else {
+            games
+        }
+    }
+
 
     private fun listenForGameChanges() {
         firebaseModel.listenForGameChanges{ updatedGames, deletedGames ->
