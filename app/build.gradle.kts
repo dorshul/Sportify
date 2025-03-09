@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-
+    implementation(libs.okhttp)
     implementation(libs.androidx.swiperefreshlayout)
 
     implementation(platform(libs.firebase.bom))

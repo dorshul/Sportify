@@ -2,6 +2,7 @@ package com.example.sportify.model
 
 import android.graphics.Bitmap
 import android.os.Looper
+import android.util.Log
 import androidx.core.os.HandlerCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -23,6 +24,7 @@ class Model private constructor() {
     private var mainHandler = HandlerCompat.createAsync(Looper.getMainLooper())
     val games: LiveData<List<Game>> = database.gamesDao().getAllGames()
     val loadingState: MutableLiveData<LoadingState> = MutableLiveData<LoadingState>()
+    private val weatherService = WeatherService()
 
     private val firebaseModel = FirebaseModel()
     private val cloudinaryModel = CloudinaryModel()
@@ -34,6 +36,46 @@ class Model private constructor() {
         listenForGameChanges() // Start real-time Firestore sync
     }
 
+
+    fun fetchWeatherForGame(game: Game, callback: (Boolean) -> Unit) {
+        if (game.location.isEmpty()) {
+            Log.d("Model", "Cannot fetch weather for empty location")
+            callback(false)
+            return
+        }
+
+        Log.d("Model", "Fetching weather for location: ${game.location}")
+        weatherService.getWeatherByCity(game.location) { weatherInfo, error ->
+            if (weatherInfo != null) {
+                Log.d("Model", "Weather fetched successfully: ${weatherInfo.formatForDisplay()}")
+
+                // Create a new game object with the weather data
+                val updatedGame = Game(
+                    id = game.id,
+                    userId = game.userId,
+                    pictureUrl = game.pictureUrl,
+                    location = game.location,
+                    description = game.description,
+                    numberOfPlayers = game.numberOfPlayers,
+                    approvals = game.approvals,
+                    isApproved = game.isApproved,
+                    lastUpdated = game.lastUpdated,
+                    weatherTemp = weatherInfo.formattedTemperature(),
+                    weatherDescription = weatherInfo.description,
+                    weatherIcon = weatherInfo.icon
+                )
+
+                // Save the updated game
+                firebaseModel.addGame(updatedGame) {
+                    Log.d("Model", "Game updated with weather data")
+                    callback(true)
+                }
+            } else {
+                Log.e("Model", "Error fetching weather: $error")
+                callback(false)
+            }
+        }
+    }
 
     fun refreshAllGames() {
         loadingState.postValue(LoadingState.LOADING)
@@ -54,6 +96,7 @@ class Model private constructor() {
             }
         }
     }
+
 
     fun getGameById(gameId: String, callback: (Game?) -> Unit) {
         firebaseModel.getGameById(gameId, callback)

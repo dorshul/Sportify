@@ -18,6 +18,7 @@ import com.example.sportify.databinding.FragmentAddGameBinding
 import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Model
 import com.example.sportify.model.Game
+import com.example.sportify.model.WeatherService
 import com.squareup.picasso.Picasso
 import java.util.UUID
 
@@ -27,6 +28,7 @@ class AddGameFragment : Fragment() {
     var game: Game? = null
     var previousBitmap: Bitmap? = null
     private var didSetGameImage = false
+    private val weatherService = WeatherService()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -78,31 +80,95 @@ class AddGameFragment : Fragment() {
             return
         }
 
+        val location = binding?.locationText?.text?.toString() ?: ""
+
+        // Show loading state
+        binding?.saveButton?.isEnabled = false
+        binding?.saveButton?.text = "Saving..."
+
         game = Game(
             id = game?.id ?: UUID.randomUUID().toString(),
-            userId =  game?.userId ?: AuthManager.shared.userId, // Use current user's ID
+            userId = game?.userId ?: AuthManager.shared.userId,
             pictureUrl = game?.pictureUrl ?: "@drawable/take_picture",
             approvals = game?.approvals ?: 0,
-            location = binding?.locationText?.text?.toString() ?: "",
+            location = location,
             description = binding?.descriptionText?.text?.toString() ?: "",
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
             isApproved = game?.isApproved ?: false,
+            // Keep existing weather data if editing a game
+            weatherTemp = game?.weatherTemp,
+            weatherDescription = game?.weatherDescription,
+            weatherIcon = game?.weatherIcon
         )
 
-
+        // First save the game
         if (didSetGameImage) {
             binding?.takePictureImageView?.isDrawingCacheEnabled = true
             binding?.takePictureImageView?.buildDrawingCache()
             val bitmap = (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
 
             Model.shared.addGame(game!!, bitmap) {
-                Navigation.findNavController(view).popBackStack()
+                // After saving, fetch weather if location is provided
+                if (location.isNotEmpty()) {
+                    Model.shared.fetchWeatherForGame(game!!) { weatherSuccess ->
+                        activity?.runOnUiThread {
+                            binding?.saveButton?.isEnabled = true
+                            binding?.saveButton?.text = "Save"
+                            Navigation.findNavController(view).popBackStack()
+                        }
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        binding?.saveButton?.isEnabled = true
+                        binding?.saveButton?.text = "Save"
+                        Navigation.findNavController(view).popBackStack()
+                    }
+                }
             }
         } else {
             Model.shared.addGame(game!!, null) {
-                Navigation.findNavController(view).popBackStack()
+                // After saving, fetch weather if location is provided
+                if (location.isNotEmpty()) {
+                    Model.shared.fetchWeatherForGame(game!!) { weatherSuccess ->
+                        activity?.runOnUiThread {
+                            binding?.saveButton?.isEnabled = true
+                            binding?.saveButton?.text = "Save"
+                            Navigation.findNavController(view).popBackStack()
+                        }
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        binding?.saveButton?.isEnabled = true
+                        binding?.saveButton?.text = "Save"
+                        Navigation.findNavController(view).popBackStack()
+                    }
+                }
             }
         }
+    }
 
+
+    private fun saveGameWithImage(view: View) {
+        if (didSetGameImage) {
+            binding?.takePictureImageView?.isDrawingCacheEnabled = true
+            binding?.takePictureImageView?.buildDrawingCache()
+            val bitmap = (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
+
+            Model.shared.addGame(game!!, bitmap) {
+                activity?.runOnUiThread {
+                    binding?.saveButton?.isEnabled = true
+                    binding?.saveButton?.text = "Save"
+                    Navigation.findNavController(view).popBackStack()
+                }
+            }
+        } else {
+            Model.shared.addGame(game!!, null) {
+                activity?.runOnUiThread {
+                    binding?.saveButton?.isEnabled = true
+                    binding?.saveButton?.text = "Save"
+                    Navigation.findNavController(view).popBackStack()
+                }
+            }
+        }
     }
 }

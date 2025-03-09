@@ -18,7 +18,11 @@ data class Game(
     val numberOfPlayers: Int,
     var approvals: Int,
     var isApproved: Boolean,
-    val lastUpdated: Long? = null
+    val lastUpdated: Long? = null,
+    var weatherTemp: String? = null,
+    var weatherDescription: String? = null,
+    var weatherIcon: String? = null
+
 ) {
 
     companion object {
@@ -52,6 +56,9 @@ data class Game(
             val numberOfPlayers = (json[NUMBER_OF_PLAYERS_KEY] as? Number)?.toInt() ?: 0
             val approvals = (json[APPROVALS_KEY] as? Number)?.toInt() ?: 0
             val isApproved = json[IS_APPROVED_KEY] as? Boolean ?: false
+            val weatherTemp = json["weatherTemp"] as? String
+            val weatherDescription = json["weatherDescription"] as? String
+            val weatherIcon = json["weatherIcon"] as? String
 
             val timeStamp = json[LAST_UPDATED] as? Timestamp
             val lastUpdatedLongTimestamp = timeStamp?.toDate()?.time
@@ -65,7 +72,10 @@ data class Game(
                 numberOfPlayers = numberOfPlayers,
                 approvals = approvals,
                 isApproved = isApproved,
-                lastUpdated = lastUpdatedLongTimestamp
+                lastUpdated = lastUpdatedLongTimestamp,
+                weatherTemp = weatherTemp,
+                weatherDescription = weatherDescription,
+                weatherIcon = weatherIcon
             )
         }
     }
