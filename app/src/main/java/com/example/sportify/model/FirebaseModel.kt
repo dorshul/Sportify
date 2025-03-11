@@ -10,9 +10,11 @@ import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
 import com.example.sportify.utils.extensions.toFirebaseTimestamp
 import com.google.firebase.firestore.DocumentChange
+import com.google.firebase.firestore.SetOptions
 
 class FirebaseModel {
     private val database = Firebase.firestore
+    private val TAG = "FirebaseModel"
 
     init {
         val settings = firestoreSettings {
@@ -26,17 +28,20 @@ class FirebaseModel {
             .whereGreaterThanOrEqualTo(Game.LAST_UPDATED, sinceLastUpdated.toFirebaseTimestamp)
             .get()
             .addOnCompleteListener {
-            when (it.isSuccessful) {
-                true -> {
-                    val games: MutableList<Game> = mutableListOf()
-                    for (json in it.result) {
-                        games.add(Game.fromJSON(json.data))
+                when (it.isSuccessful) {
+                    true -> {
+                        val games: MutableList<Game> = mutableListOf()
+                        for (json in it.result) {
+                            games.add(Game.fromJSON(json.data))
+                        }
+                        callback(games)
                     }
-                    callback(games)
+                    false -> {
+                        Log.e(TAG, "Error getting games: ${it.exception?.message}")
+                        callback(listOf())
+                    }
                 }
-                false -> callback(listOf())
             }
-        }
     }
 
     fun getGameById(gameId: String, callback: (Game?) -> Unit) {
@@ -51,18 +56,22 @@ class FirebaseModel {
                         callback(null) // Document does not exist
                     }
                 } else {
+                    Log.e(TAG, "Error getting game: ${task.exception?.message}")
                     callback(null) // Task failed
                 }
             }
     }
 
     fun addGame(game: Game, callback: EmptyCallback) {
-        database.collection(Constants.Collections.GAMES).document(game.id).set(game.json)
+        // Use merge option to prevent overwriting fields that might be set by other clients
+        database.collection(Constants.Collections.GAMES).document(game.id).set(game.json, SetOptions.merge())
             .addOnCompleteListener {
                 callback()
             }
-            .addOnFailureListener {
-                Log.d("TAG", it.toString() + it.message)
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error adding game: ${e.message}", e)
+                // Still call callback to not block UI
+                callback()
             }
     }
 
@@ -72,16 +81,38 @@ class FirebaseModel {
                 if (task.isSuccessful) {
                     callback(true) // Successfully deleted the game
                 } else {
+                    Log.e(TAG, "Error deleting game: ${task.exception?.message}")
                     callback(false) // Deletion failed
                 }
             }
     }
 
+    fun deleteWeatherFields(gameId: String, callback: EmptyCallback) {
+        val updates = mapOf<String, Any?>(
+            "weatherTemp" to null,
+            "weatherDescription" to null,
+            "weatherIcon" to null
+        )
+
+        database.collection(Constants.Collections.GAMES).document(gameId)
+            .update(updates)
+            .addOnSuccessListener {
+                Log.d(TAG, "Weather fields deleted for game: $gameId")
+                callback()
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error deleting weather fields: ${e.message}", e)
+                // Still call callback to not block UI
+                callback()
+            }
+    }
+
+
     fun listenForGameChanges(callback: (List<Game>, List<Game>) -> Unit) {
         database.collection(Constants.Collections.GAMES)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e("Firestore", "Error listening to Game changes", error)
+                    Log.e(TAG, "Error listening to Game changes", error)
                     return@addSnapshotListener
                 }
 
@@ -89,13 +120,13 @@ class FirebaseModel {
                 val deletedGames = mutableListOf<Game>()
 
                 snapshot?.documentChanges?.forEach { change ->
-                    val Game = Game.fromJSON(change.document.data)
+                    val game = Game.fromJSON(change.document.data)
                     when (change.type) {
                         DocumentChange.Type.ADDED, DocumentChange.Type.MODIFIED -> {
-                            updatedGames.add(Game)
+                            updatedGames.add(game)
                         }
                         DocumentChange.Type.REMOVED -> {
-                            deletedGames.add(Game)
+                            deletedGames.add(game)
                         }
                     }
                 }
@@ -103,5 +134,4 @@ class FirebaseModel {
                 callback(updatedGames, deletedGames)
             }
     }
-
 }

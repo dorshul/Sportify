@@ -1,5 +1,3 @@
-// Create/replace: app/src/main/java/com/example/sportify/model/WeatherService.kt
-
 package com.example.sportify.model
 
 import android.os.Handler
@@ -13,32 +11,76 @@ import okhttp3.Response
 import org.json.JSONObject
 import java.io.IOException
 import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
 
 class WeatherService {
-    private val client = OkHttpClient()
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(10, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .build()
+
     private val apiKey = "a46af2e1199b957262ac5e39d755155d"
     private val baseUrl = "https://api.openweathermap.org/data/2.5/weather"
 
-    // Add a cache to store weather results
-    private val weatherCache = mutableMapOf<String, Pair<WeatherInfo, Long>>()
-    private val CACHE_DURATION_MS = 30 * 60 * 1000 // 30 minutes
-
     companion object {
         private const val TAG = "WeatherService"
+        private val weatherCache = ConcurrentHashMap<String, Pair<WeatherInfo, Long>>()
+        private const val CACHE_DURATION_MS = 60 * 60 * 1000 // 1 hour
+
+        fun hasValidCache(location: String): Boolean {
+            if (location.isBlank()) return false
+
+            val cachedEntry = weatherCache[location.trim()]
+            if (cachedEntry != null) {
+                val (_, timestamp) = cachedEntry
+                val currentTime = System.currentTimeMillis()
+                return (currentTime - timestamp < CACHE_DURATION_MS)
+            }
+            return false
+        }
+
+        fun getCachedWeather(location: String): WeatherInfo? {
+            if (location.isBlank()) return null
+
+            val cachedEntry = weatherCache[location.trim()]
+            if (cachedEntry != null) {
+                val (weatherInfo, timestamp) = cachedEntry
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - timestamp < CACHE_DURATION_MS) {
+                    return weatherInfo
+                }
+            }
+            return null
+        }
+
+        fun updateCache(location: String, weatherInfo: WeatherInfo) {
+            if (location.isBlank()) return
+
+            weatherCache[location.trim()] = Pair(weatherInfo, System.currentTimeMillis())
+        }
+
+        fun removeFromCache(location: String) {
+            if (location.isBlank()) return
+            weatherCache.remove(location.trim())
+            Log.d(TAG, "Removed from weather cache: $location")
+        }
+
+        fun clearCache() {
+            weatherCache.clear()
+        }
     }
 
-    // Data class to represent weather information
     data class WeatherInfo(
         val temperature: Double,
         val description: String,
         val icon: String
     ) {
-        // Format temperature as "XX°C"
         fun formattedTemperature(): String {
             return "${temperature.toInt()}°C"
         }
 
-        // Get emoji for weather condition
         fun getWeatherEmoji(): String {
             return when {
                 icon.contains("01") -> "☀️" // clear sky
@@ -58,7 +100,7 @@ class WeatherService {
         }
     }
 
-    // Get weather by city name
+    // Get weather by city name with improved caching
     fun getWeatherByCity(city: String, callback: (WeatherInfo?, String?) -> Unit) {
         if (city.isEmpty()) {
             Log.w(TAG, "Empty city name provided")
@@ -68,21 +110,15 @@ class WeatherService {
 
         val formattedCity = city.trim()
 
-        // Check cache first
-        val cachedWeather = weatherCache[formattedCity]
+        // Check cache first using the companion method
+        val cachedWeather = getCachedWeather(formattedCity)
         if (cachedWeather != null) {
-            val (weatherInfo, timestamp) = cachedWeather
-            val currentTime = System.currentTimeMillis()
-
-            // If cache is still valid (less than 30 minutes old)
-            if (currentTime - timestamp < CACHE_DURATION_MS) {
-                Log.d(TAG, "Using cached weather for: $formattedCity")
-                // Ensure callback runs on main thread
-                Handler(Looper.getMainLooper()).post {
-                    callback(weatherInfo, null)
-                }
-                return
+            Log.d(TAG, "Using cached weather for: $formattedCity")
+            // Ensure callback runs on main thread
+            Handler(Looper.getMainLooper()).post {
+                callback(cachedWeather, null)
             }
+            return
         }
 
         // Proceed with API request if no cache or cache expired
@@ -94,8 +130,8 @@ class WeatherService {
 
             fetchWeather(url) { weatherInfo, error ->
                 if (weatherInfo != null) {
-                    // Update cache with new weather data
-                    weatherCache[formattedCity] = Pair(weatherInfo, System.currentTimeMillis())
+                    // Update cache with new weather data using companion method
+                    updateCache(formattedCity, weatherInfo)
                 }
                 // Ensure callback runs on main thread
                 Handler(Looper.getMainLooper()).post {
@@ -110,24 +146,27 @@ class WeatherService {
         }
     }
 
-    // Get weather by coordinates
+
+    fun isValidLocation(location: String): Boolean {
+        // Simple validation - can be expanded if needed
+        return location.trim().length >= 2 &&
+                !location.matches(Regex(".*[0-9].*")) && // No numbers
+                !location.matches(Regex(".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?].*")) // No special chars
+    }
+
+
+    // Get weather by coordinates with improved caching
     fun getWeatherByCoordinates(lat: Double, lon: Double, callback: (WeatherInfo?, String?) -> Unit) {
         val cacheKey = "lat${lat}_lon${lon}"
 
-        // Check cache first
-        val cachedWeather = weatherCache[cacheKey]
+        // Check cache first using the companion method
+        val cachedWeather = getCachedWeather(cacheKey)
         if (cachedWeather != null) {
-            val (weatherInfo, timestamp) = cachedWeather
-            val currentTime = System.currentTimeMillis()
-
-            // If cache is still valid (less than 30 minutes old)
-            if (currentTime - timestamp < CACHE_DURATION_MS) {
-                Log.d(TAG, "Using cached weather for coordinates: $lat, $lon")
-                Handler(Looper.getMainLooper()).post {
-                    callback(weatherInfo, null)
-                }
-                return
+            Log.d(TAG, "Using cached weather for coordinates: $lat, $lon")
+            Handler(Looper.getMainLooper()).post {
+                callback(cachedWeather, null)
             }
+            return
         }
 
         val url = "$baseUrl?lat=$lat&lon=$lon&units=metric&appid=$apiKey"
@@ -135,8 +174,8 @@ class WeatherService {
 
         fetchWeather(url) { weatherInfo, error ->
             if (weatherInfo != null) {
-                // Update cache with new weather data
-                weatherCache[cacheKey] = Pair(weatherInfo, System.currentTimeMillis())
+                // Update cache with new weather data using companion method
+                updateCache(cacheKey, weatherInfo)
             }
             Handler(Looper.getMainLooper()).post {
                 callback(weatherInfo, error)

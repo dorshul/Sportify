@@ -3,6 +3,7 @@ package com.example.sportify.adapter
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
@@ -14,8 +15,12 @@ class PublicGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.A
 
     var listener: OnPublicGameClickListener? = null
 
-    fun update(games: List<Game>?) {
-        this.games = games
+    fun update(newGames: List<Game>?) {
+        val diffCallback = GameDiffCallback(games ?: listOf(), newGames ?: listOf())
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+
+        this.games = newGames
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getItemCount(): Int = games?.size ?: 0
@@ -35,5 +40,24 @@ class PublicGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.A
 
     fun onApprovalClicked(position: Int) {
         notifyItemChanged(position)
+    }
+
+    // DiffUtil class to handle efficient updates
+    private class GameDiffCallback(
+        private val oldList: List<Game>,
+        private val newList: List<Game>
+    ) : DiffUtil.Callback() {
+
+        override fun getOldListSize() = oldList.size
+
+        override fun getNewListSize() = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition].id == newList[newItemPosition].id
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition] == newList[newItemPosition]
+        }
     }
 }

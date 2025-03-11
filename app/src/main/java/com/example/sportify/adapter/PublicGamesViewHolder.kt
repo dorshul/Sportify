@@ -1,7 +1,6 @@
 package com.example.sportify.adapter
 
-import android.widget.ImageButton
-import android.widget.TextView
+import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
@@ -16,7 +15,8 @@ class PublicGamesViewHolder(
     listener: OnPublicGameClickListener?
 ): RecyclerView.ViewHolder(binding.root) {
     private var game: Game? = null
-    private var isLoadingWeather = false
+    private var weatherRequestInProgress = false
+    private var position = -1
 
     init {
         binding.approvalIcon?.apply {
@@ -39,33 +39,16 @@ class PublicGamesViewHolder(
         }
     }
 
-
-    // Update the bind method to handle weather display
+    // Update the bind method for more stable weather display
     fun bind(game: Game?, position: Int) {
         this.game = game
+        this.position = position
+
         binding.userDetails.text = game?.userId
         binding.gameDescription.text = game?.description ?: ""
         binding.gameLocation.text = game?.location
 
-        // Display weather information if available
-        if (!game?.weatherTemp.isNullOrEmpty()) {
-            val weatherEmoji = getWeatherEmoji(game?.weatherIcon)
-            binding.gameWeather.text = "${game?.weatherTemp} $weatherEmoji"
-        } else {
-            binding.gameWeather.text = "Loading weather..."
-
-            // Fetch weather if location exists and we aren't already loading
-            if (game != null && !game.location.isNullOrEmpty() && !isLoadingWeather) {
-                isLoadingWeather = true
-                Model.shared.fetchWeatherForGame(game) { success ->
-                    isLoadingWeather = false
-                    // Weather is updated in the database, it will be loaded next time
-                }
-            } else {
-                binding.gameWeather.text = "25°C ☀️" // Default fallback weather
-            }
-        }
-
+        // Set approval counts and button state
         binding.approvalsCount.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
         binding.approvalIcon.apply {
             setImageResource(
@@ -74,6 +57,8 @@ class PublicGamesViewHolder(
             tag = position
             isEnabled = game?.isApproved == true || game?.approvals != game?.numberOfPlayers
         }
+
+        // Display game image
         game?.pictureUrl?.let {
             if (it.isNotBlank()) {
                 Picasso.get()
@@ -82,9 +67,91 @@ class PublicGamesViewHolder(
                     .into(binding.gamePicture)
             }
         }
+
+        // Handle weather display
+        updateWeatherDisplay()
     }
 
-    // Add this helper method to get weather emoji
+    private fun updateWeatherDisplay() {
+        // Skip if game is null
+        val currentGame = game ?: return
+
+        // If we already have weather data, display it
+        if (!currentGame.weatherTemp.isNullOrEmpty()) {
+            val weatherEmoji = getWeatherEmoji(currentGame.weatherIcon)
+            binding.gameWeather.text = "${currentGame.weatherTemp} $weatherEmoji"
+            binding.gameWeather.visibility = View.VISIBLE
+            return
+        }
+
+        // If location is empty, hide weather display
+        if (currentGame.location.isNullOrEmpty()) {
+            binding.gameWeather.visibility = View.GONE
+            return
+        }
+
+        // If we're already fetching weather, show loading
+        if (weatherRequestInProgress) {
+            binding.gameWeather.text = "Loading weather..."
+            binding.gameWeather.visibility = View.VISIBLE
+            return
+        }
+
+        // Check if we have cached weather data for this location
+        if (WeatherService.hasValidCache(currentGame.location)) {
+            val cachedWeather = WeatherService.getCachedWeather(currentGame.location)
+            if (cachedWeather != null) {
+                binding.gameWeather.text = cachedWeather.formatForDisplay()
+                binding.gameWeather.visibility = View.VISIBLE
+
+                // We should still update the game object in the database with this weather data
+                // But we don't need to wait for it or show loading
+                updateGameWithCachedWeather(currentGame, cachedWeather)
+                return
+            }
+        }
+
+        // If we got here, we need to fetch weather - show loading state
+        binding.gameWeather.text = "Loading weather..."
+        binding.gameWeather.visibility = View.VISIBLE
+        weatherRequestInProgress = true
+
+        // Fetch weather data
+        Model.shared.fetchWeatherForGame(currentGame) { success ->
+            weatherRequestInProgress = false
+
+            // Only update UI if view is still attached and position hasn't changed
+            if (binding.root.isAttachedToWindow && this.position == position) {
+                if (success) {
+                    // Get latest game data with weather
+                    Model.shared.getGameById(currentGame.id) { updatedGame ->
+                        if (binding.root.isAttachedToWindow && this.position == position) {
+                            updatedGame?.let {
+                                game = it // Update our local reference
+                                val weatherEmoji = getWeatherEmoji(it.weatherIcon)
+                                binding.gameWeather.text = "${it.weatherTemp} $weatherEmoji"
+                            }
+                        }
+                    }
+                } else {
+                    binding.gameWeather.text = "Weather unavailable"
+                }
+            }
+        }
+    }
+
+    private fun updateGameWithCachedWeather(game: Game, weather: WeatherService.WeatherInfo) {
+        val updatedGame = game.copy(
+            weatherTemp = weather.formattedTemperature(),
+            weatherDescription = weather.description,
+            weatherIcon = weather.icon
+        )
+
+        // Update in database without UI callbacks
+        Model.shared.addGame(updatedGame, null) { }
+    }
+
+    // Helper method to get weather emoji
     private fun getWeatherEmoji(icon: String?): String {
         if (icon.isNullOrEmpty()) return "☀️"
 
@@ -98,4 +165,5 @@ class PublicGamesViewHolder(
             icon.contains("50") -> "🌫️" // mist
             else -> "🌤️" // default
         }
-    }}
+    }
+}
