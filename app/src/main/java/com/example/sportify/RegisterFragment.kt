@@ -29,6 +29,8 @@ class RegisterFragment : Fragment() {
         return binding?.root
     }
 
+
+
     private fun setupClickListeners() {
         binding?.registerButton?.setOnClickListener {
             attemptRegister()
@@ -74,13 +76,15 @@ class RegisterFragment : Fragment() {
         }
     }
 
+    // Add this method to ensure a complete user profile is created at registration
     private fun saveUserProfile(name: String, age: Int) {
         val userId = AuthManager.shared.userId
 
         val user = User(
             id = userId,
             name = name,
-            age = age
+            age = age,
+            profileImageUrl = "" // Explicitly initialize to empty string
         )
 
         db.collection("users").document(userId).set(user.toMap())

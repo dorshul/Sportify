@@ -178,42 +178,71 @@ class Model private constructor() {
         }
     }
 
+    fun uploadImage(bitmap: Bitmap, gameId: String, callback: (String?) -> Unit) {
+        cloudinaryModel.uploadImage(
+            bitmap = bitmap,
+            gameId = gameId,
+            onSuccess = { uri ->
+                callback(uri)
+            },
+            onError = {
+                Log.e("Model", "Error uploading image: $it")
+                callback(null)
+            }
+        )
+    }
+
     fun addGame(game: Game, image: Bitmap?, callback: EmptyCallback) {
         // Set the user ID to the current authenticated user
         val gameWithUserId = game.copy(userId = AuthManager.shared.userId)
 
-        // First update local database for immediate UI feedback
-        executor.execute {
-            database.gamesDao().insertAll(gameWithUserId)
+        if (image != null) {
+            // First upload the image
+            cloudinaryModel.uploadImage(
+                bitmap = image,
+                gameId = game.id,
+                onSuccess = { uri ->
+                    if (!uri.isNullOrBlank()) {
+                        // Update game with new image URL
+                        val gameWithImage = gameWithUserId.copy(pictureUrl = uri)
 
-            mainHandler.post {
-                // Then update Firebase
-                firebaseModel.addGame(gameWithUserId) {
-                    image?.let {
-                        cloudinaryModel.uploadImage(
-                            bitmap = image,
-                            gameId = game.id,
-                            onSuccess = { uri ->
-                                if (!uri.isNullOrBlank()) {
-                                    val gm = gameWithUserId.copy(pictureUrl = uri)
-                                    // Update local DB
-                                    executor.execute {
-                                        database.gamesDao().insertAll(gm)
-                                        mainHandler.post {
-                                            firebaseModel.addGame(gm, callback)
-                                        }
-                                    }
-                                } else {
+                        // Now save the game with the image URL
+                        firebaseModel.addGame(gameWithImage) {
+                            // Also update local database
+                            executor.execute {
+                                database.gamesDao().insertAll(gameWithImage)
+                                mainHandler.post {
                                     callback()
                                 }
-                            },
-                            onError = { callback() }
-                        )
-                    } ?: callback()
+                            }
+                        }
+                    } else {
+                        // Image upload failed, save game without changing URL
+                        saveGameToFirebaseAndLocal(gameWithUserId, callback)
+                    }
+                },
+                onError = {
+                    // Image upload error, save game without changing URL
+                    saveGameToFirebaseAndLocal(gameWithUserId, callback)
+                }
+            )
+        } else {
+            // No image to upload, just save the game
+            saveGameToFirebaseAndLocal(gameWithUserId, callback)
+        }
+    }
+
+    private fun saveGameToFirebaseAndLocal(game: Game, callback: EmptyCallback) {
+        firebaseModel.addGame(game) {
+            executor.execute {
+                database.gamesDao().insertAll(game)
+                mainHandler.post {
+                    callback()
                 }
             }
         }
     }
+
 
     fun deleteGame(game: Game, callback: (Boolean) -> Unit) {
         executor.execute {

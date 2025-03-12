@@ -14,10 +14,12 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
 import com.example.sportify.databinding.FragmentProfileBinding
 import com.example.sportify.model.AuthManager
+import com.example.sportify.model.CloudinaryModel
 import com.example.sportify.model.dao.User
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.squareup.picasso.Picasso
+import android.util.Log
 
 class ProfileFragment : Fragment() {
     private var binding: FragmentProfileBinding? = null
@@ -25,6 +27,9 @@ class ProfileFragment : Fragment() {
     var previousBitmap: Bitmap? = null
     private val db = Firebase.firestore
     private var user: User? = null
+    private val cloudinaryModel = CloudinaryModel()
+    private val TAG = "ProfileFragment"
+    private var isUploadingImage = false
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -47,12 +52,60 @@ class ProfileFragment : Fragment() {
                 // Update the ImageView with the new image and save it as the previous image
                 previousBitmap = bitmap
                 binding?.userPicture?.setImageBitmap(bitmap)
-                // TODO: Upload profile picture to Firebase Storage
+
+                // Upload the new profile picture
+                uploadProfilePicture(bitmap)
             } else {
                 // Camera was closed, restore the previous image
                 binding?.userPicture?.setImageBitmap(previousBitmap)
             }
         }
+    }
+
+    private fun uploadProfilePicture(bitmap: Bitmap) {
+        if (isUploadingImage) return
+
+        val userId = AuthManager.shared.userId
+        if (userId.isEmpty()) {
+            Toast.makeText(context, "You must be logged in to update your profile", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isUploadingImage = true
+        // Show a loading indicator
+        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+
+        cloudinaryModel.uploadImage(
+            bitmap = bitmap,
+            gameId = "profile_${userId}", // Use unique ID for profiles
+            onSuccess = { imageUrl ->
+                isUploadingImage = false
+                if (!imageUrl.isNullOrBlank()) {
+                    // Update the user object with the new image URL
+                    user = user?.copy(profileImageUrl = imageUrl)
+
+                    // Update Firestore
+                    updateUserField("profileImageUrl", imageUrl)
+                    Log.d(TAG, "Profile picture uploaded successfully: $imageUrl")
+
+                    // Show success message
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Failed to upload profile picture", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onError = { error ->
+                isUploadingImage = false
+                Log.e(TAG, "Error uploading profile picture: $error")
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Error uploading profile picture: $error", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
     }
 
     private fun setupClickListeners() {
@@ -69,7 +122,7 @@ class ProfileFragment : Fragment() {
                 binding?.nameEditButton?.setImageResource(R.drawable.ic_save) // Change to save icon
             } else {
                 // Save changes and switch back to TextView
-                val newName = binding?.nameEditText?.text.toString()
+                val newName = binding?.nameEditText?.text?.toString() ?: ""
                 binding?.nameTextValue?.text = newName
                 binding?.nameEditText?.visibility = View.GONE
                 binding?.nameTextValue?.visibility = View.VISIBLE
@@ -88,13 +141,13 @@ class ProfileFragment : Fragment() {
                 binding?.ageTextValue?.visibility = View.GONE
                 binding?.ageEditButton?.setImageResource(R.drawable.ic_save) // Change to save icon
             } else {
-                val newAge = binding?.ageEditText?.text.toString()
+                val newAge = binding?.ageEditText?.text?.toString()
                 binding?.ageTextValue?.text = newAge
                 binding?.ageEditText?.visibility = View.GONE
                 binding?.ageTextValue?.visibility = View.VISIBLE
                 binding?.ageEditButton?.setImageResource(R.drawable.ic_edit) // Change back to edit icon
 
-                updateUserField("age", newAge.toIntOrNull() ?: 0)
+                updateUserField("age", newAge?.toIntOrNull() ?: 0)
             }
         }
 
@@ -115,9 +168,16 @@ class ProfileFragment : Fragment() {
                 if (document != null && document.exists()) {
                     user = User.fromMap(document.data ?: mapOf(), userId)
                     updateUI()
+
+                    // Log the profile data to debug
+                    Log.d(TAG, "Fetched user profile: ${user}")
+                    Log.d(TAG, "Profile image URL: ${user?.profileImageUrl}")
+                } else {
+                    Log.e(TAG, "User document doesn't exist")
                 }
             }
             .addOnFailureListener { e ->
+                Log.e(TAG, "Error loading profile: ${e.message}")
                 Toast.makeText(context, "Error loading profile: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
@@ -127,10 +187,23 @@ class ProfileFragment : Fragment() {
         binding?.ageTextValue?.text = user?.age?.toString() ?: ""
 
         if (!user?.profileImageUrl.isNullOrEmpty()) {
+            Log.d(TAG, "Loading profile image from URL: ${user?.profileImageUrl}")
             Picasso.get()
                 .load(user?.profileImageUrl)
                 .placeholder(R.drawable.avatar)
-                .into(binding?.userPicture)
+                .error(R.drawable.avatar)
+                .into(binding?.userPicture, object : com.squareup.picasso.Callback {
+                    override fun onSuccess() {
+                        Log.d(TAG, "Profile image loaded successfully")
+                    }
+
+                    override fun onError(e: Exception?) {
+                        Log.e(TAG, "Error loading profile image: ${e?.message}")
+                    }
+                })
+        } else {
+            Log.d(TAG, "No profile image URL available")
+            binding?.userPicture?.setImageResource(R.drawable.avatar)
         }
     }
 
@@ -140,7 +213,11 @@ class ProfileFragment : Fragment() {
 
         db.collection("users").document(userId)
             .update(field, value)
+            .addOnSuccessListener {
+                Log.d(TAG, "User field $field updated successfully")
+            }
             .addOnFailureListener { e ->
+                Log.e(TAG, "Failed to update profile: ${e.message}")
                 Toast.makeText(context, "Failed to update profile: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }

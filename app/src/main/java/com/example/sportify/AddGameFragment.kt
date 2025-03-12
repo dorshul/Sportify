@@ -31,6 +31,7 @@ class AddGameFragment : Fragment() {
     private val weatherService = WeatherService()
     private var isSaving = false
     private var originalLocation: String? = null
+    private val TAG = "AddGameFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -98,22 +99,22 @@ class AddGameFragment : Fragment() {
         binding?.saveButton?.text = "Saving..."
 
         // Check if location is valid
-        val isValidLocation = weatherService.isValidLocation(location)
+        val isValidLocation = true // Simplified for now - remove custom validation
 
         // If location changed or is invalid, clear the weather data
-        val shouldClearWeather = locationChanged || (location.isNotEmpty() && !isValidLocation)
+        val shouldClearWeather = locationChanged
 
         // Create updated game object
         val updatedGame = Game(
             id = game?.id ?: UUID.randomUUID().toString(),
             userId = game?.userId ?: AuthManager.shared.userId,
-            pictureUrl = game?.pictureUrl ?: "@drawable/take_picture",
+            pictureUrl = game?.pictureUrl ?: "@drawable/take_picture", // Keep original URL for now
             approvals = game?.approvals ?: 0,
             location = location,
             description = binding?.descriptionText?.text?.toString() ?: "",
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
             isApproved = game?.isApproved ?: false,
-            // Only keep weather data if location didn't change and is valid
+            // Only keep weather data if location didn't change
             weatherTemp = if (shouldClearWeather) null else game?.weatherTemp,
             weatherDescription = if (shouldClearWeather) null else game?.weatherDescription,
             weatherIcon = if (shouldClearWeather) null else game?.weatherIcon
@@ -127,53 +128,36 @@ class AddGameFragment : Fragment() {
             WeatherService.removeFromCache(originalLocation!!)
         }
 
-        // If location is invalid but not empty, show a warning
-        if (location.isNotEmpty() && !isValidLocation) {
-            Toast.makeText(context, "Location may be invalid. Weather data might not be available.", Toast.LENGTH_SHORT).show()
-        }
-
-        // First save the game
-        saveGameWithImageAndWeather(view, location, locationChanged, isValidLocation)
-    }
-
-
-    private fun saveGameWithImageAndWeather(view: View, location: String, locationChanged: Boolean, isValidLocation: Boolean) {
+        // Prepare bitmap if image was changed
         val bitmap = if (didSetGameImage) {
             binding?.takePictureImageView?.isDrawingCacheEnabled = true
             binding?.takePictureImageView?.buildDrawingCache()
             (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
         } else null
 
-        Model.shared.addGame(game!!, bitmap) {
-            // Only try to fetch weather if location exists, is valid, and either changed or missing weather data
-            if (location.isNotEmpty() && isValidLocation &&
-                (locationChanged || game?.weatherTemp.isNullOrEmpty())) {
+        // Now save the game and handle image/weather
+        handleGameSave(view, updatedGame, bitmap, location, locationChanged)
+    }
 
-                Model.shared.fetchWeatherForGame(game!!, forceRefresh = locationChanged) { weatherSuccess ->
+    private fun handleGameSave(view: View, gameToSave: Game, bitmap: Bitmap?, location: String, locationChanged: Boolean) {
+        Log.d(TAG, "Saving game with${if (bitmap != null) "" else "out"} new image")
+
+        // Use the original Model.addGame method
+        Model.shared.addGame(gameToSave, bitmap) {
+            Log.d(TAG, "Game saved, now handling weather")
+
+            // After save is done, handle weather if needed
+            if (location.isNotEmpty() && locationChanged) {
+                binding?.saveButton?.text = "Updating weather..."
+
+                Model.shared.fetchWeatherForGame(gameToSave, forceRefresh = locationChanged) { weatherSuccess ->
+                    Log.d(TAG, "Weather update ${if (weatherSuccess) "succeeded" else "failed"}")
+
                     if (!weatherSuccess) {
-                        // If weather fetch failed, make sure data is completely cleared
-                        Model.shared.clearWeatherData(game!!) { _ ->
-                            activity?.runOnUiThread {
-                                isSaving = false
-                                binding?.saveButton?.isEnabled = true
-                                binding?.saveButton?.text = "Save"
-                                // Show toast message about weather being unavailable
-                                Toast.makeText(context, "Weather unavailable for this location", Toast.LENGTH_SHORT).show()
-                                Navigation.findNavController(view).popBackStack()
-                            }
-                        }
-                    } else {
-                        activity?.runOnUiThread {
-                            isSaving = false
-                            binding?.saveButton?.isEnabled = true
-                            binding?.saveButton?.text = "Save"
-                            Navigation.findNavController(view).popBackStack()
-                        }
+                        Toast.makeText(context, "Weather unavailable for this location", Toast.LENGTH_SHORT).show()
                     }
-                }
-            } else if (location.isNotEmpty() && !isValidLocation) {
-                // For invalid locations, explicitly clear weather data
-                Model.shared.clearWeatherData(game!!) { _ ->
+
+                    // Always finish, regardless of weather result
                     activity?.runOnUiThread {
                         isSaving = false
                         binding?.saveButton?.isEnabled = true
@@ -182,6 +166,7 @@ class AddGameFragment : Fragment() {
                     }
                 }
             } else {
+                // No weather update needed
                 activity?.runOnUiThread {
                     isSaving = false
                     binding?.saveButton?.isEnabled = true
