@@ -28,7 +28,6 @@ class AddGameFragment : Fragment() {
     var game: Game? = null
     var previousBitmap: Bitmap? = null
     private var didSetGameImage = false
-    private val weatherService = WeatherService()
     private var isSaving = false
     private var originalLocation: String? = null
     private val TAG = "AddGameFragment"

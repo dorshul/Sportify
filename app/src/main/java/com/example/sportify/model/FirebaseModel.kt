@@ -1,6 +1,7 @@
 package com.example.sportify.model
 
 import android.util.Log
+import android.widget.Toast
 import com.google.firebase.firestore.firestoreSettings
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.firestore.memoryCacheSettings
@@ -8,6 +9,7 @@ import com.google.firebase.ktx.Firebase
 import com.example.sportify.base.Constants
 import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
+import com.example.sportify.model.dao.User
 import com.example.sportify.utils.extensions.toFirebaseTimestamp
 import com.google.firebase.firestore.DocumentChange
 import com.google.firebase.firestore.SetOptions
@@ -132,6 +134,34 @@ class FirebaseModel {
                 }
 
                 callback(updatedGames, deletedGames)
+            }
+    }
+
+    fun getUserById(userId: String, callback: (User?) -> Unit, erorrCallback: (String?) -> Unit) {
+        database.collection(Constants.Collections.USERS).document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val user = User.fromMap(document.data ?: mapOf(), userId)
+                    callback(user)
+                } else {
+                    Log.e(TAG, "User document doesn't exist")
+                }
+            }
+            .addOnFailureListener { e ->
+                erorrCallback(e.message)
+            }
+    }
+
+    fun updateUser(userId: String, field: String, value: Any, callback: (String?) -> Unit) {
+        database.collection(Constants.Collections.USERS).document(userId)
+            .update(field, value)
+            .addOnSuccessListener {
+                Log.d(TAG, "User field $field updated successfully")
+                callback("User field $field updated successfully")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Failed to update profile: ${e.message}")
+                callback("Failed to update profile: ${e.message}")
             }
     }
 }

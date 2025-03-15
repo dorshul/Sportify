@@ -64,12 +64,6 @@ class MyGamesViewHolder(
             return
         }
 
-        // If location is empty, hide weather display
-        if (currentGame.location.isNullOrEmpty()) {
-            binding.gameWeather.visibility = View.GONE
-            return
-        }
-
         // If we're already fetching weather, show loading
         if (weatherRequestInProgress) {
             binding.gameWeather.text = "Loading weather..."
@@ -92,7 +86,7 @@ class MyGamesViewHolder(
         }
 
         // If we got here, we need to fetch weather - show loading state
-        binding.gameWeather.text = "Loading weather..."
+        binding.gameWeather.text = "Trying to load weather..."
         binding.gameWeather.visibility = View.VISIBLE
         weatherRequestInProgress = true
 

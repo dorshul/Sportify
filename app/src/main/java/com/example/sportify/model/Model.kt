@@ -3,6 +3,7 @@ package com.example.sportify.model
 import android.graphics.Bitmap
 import android.os.Looper
 import android.util.Log
+import android.widget.Toast
 import androidx.core.os.HandlerCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -10,6 +11,7 @@ import com.example.sportify.base.EmptyCallback
 import com.example.sportify.base.GamesCallback
 import com.example.sportify.model.dao.AppLocalDb
 import com.example.sportify.model.dao.AppLocalDbRepository
+import com.example.sportify.model.dao.User
 import java.util.concurrent.Executors
 import java.util.concurrent.ConcurrentHashMap
 
@@ -177,7 +179,7 @@ class Model private constructor() {
         }
     }
 
-    fun uploadImage(bitmap: Bitmap, gameId: String, callback: (String?) -> Unit) {
+    fun uploadImage(bitmap: Bitmap, gameId: String, callback: (String?) -> Unit, errorCallback: (String?) -> Unit) {
         cloudinaryModel.uploadImage(
             bitmap = bitmap,
             gameId = gameId,
@@ -185,8 +187,7 @@ class Model private constructor() {
                 callback(uri)
             },
             onError = {
-                Log.e("Model", "Error uploading image: $it")
-                callback(null)
+                errorCallback(it)
             }
         )
     }
@@ -439,4 +440,13 @@ class Model private constructor() {
                 }
             }
         }
-    }}
+    }
+
+    fun getUserById(userId: String, callback: (User?) -> Unit, errorCallback: (String?) -> Unit) {
+        firebaseModel.getUserById(userId, callback, errorCallback)
+    }
+
+    fun updateUser(userId: String, field: String, value: Any, callback: (String?) -> Unit) {
+        firebaseModel.updateUser(userId, field, value, callback)
+    }
+}

@@ -42,10 +42,21 @@ class PublicGamesViewHolder(
 
     // Update the bind method for more stable weather display
     fun bind(game: Game?, position: Int) {
+        if (game?.userId != null) {
+            Model.shared.getUserById(userId = game.userId,
+                { user ->
+                    binding.userDetails.text = "${user?.name}, ${user?.age}"
+                },
+                {
+                    binding.userDetails.text = "Username"
+                }
+            )
+        }
+
+
         this.game = game
         this.position = position
 
-        binding.userDetails.text = game?.userId
         binding.gameDescription.text = game?.description ?: ""
         binding.gameLocation.text = game?.location
 
@@ -87,12 +98,6 @@ class PublicGamesViewHolder(
             return
         }
 
-        // If location is empty, hide weather display
-        if (currentGame.location.isNullOrEmpty()) {
-            binding.gameWeather.visibility = View.GONE
-            return
-        }
-
         // If we're already fetching weather, show loading
         if (weatherRequestInProgress) {
             binding.gameWeather.text = "Loading weather..."
@@ -115,7 +120,7 @@ class PublicGamesViewHolder(
         }
 
         // If we got here, we need to fetch weather - show loading state
-        binding.gameWeather.text = "Loading weather..."
+        binding.gameWeather.text = "Trying to load weather..."
         binding.gameWeather.visibility = View.VISIBLE
         weatherRequestInProgress = true
 

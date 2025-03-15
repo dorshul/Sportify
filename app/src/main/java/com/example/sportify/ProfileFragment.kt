@@ -14,12 +14,12 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
 import com.example.sportify.databinding.FragmentProfileBinding
 import com.example.sportify.model.AuthManager
-import com.example.sportify.model.CloudinaryModel
 import com.example.sportify.model.dao.User
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.squareup.picasso.Picasso
 import android.util.Log
+import com.example.sportify.model.Model
 
 class ProfileFragment : Fragment() {
     private var binding: FragmentProfileBinding? = null
@@ -27,7 +27,6 @@ class ProfileFragment : Fragment() {
     var previousBitmap: Bitmap? = null
     private val db = Firebase.firestore
     private var user: User? = null
-//    private val cloudinaryModel = CloudinaryModel()
     private val TAG = "ProfileFragment"
     private var isUploadingImage = false
 
@@ -54,7 +53,7 @@ class ProfileFragment : Fragment() {
                 binding?.userPicture?.setImageBitmap(bitmap)
 
                 // Upload the new profile picture
-//                uploadProfilePicture(bitmap)
+                uploadProfilePicture(bitmap)
             } else {
                 // Camera was closed, restore the previous image
                 binding?.userPicture?.setImageBitmap(previousBitmap)
@@ -63,49 +62,47 @@ class ProfileFragment : Fragment() {
     }
 
     private fun uploadProfilePicture(bitmap: Bitmap) {
-//        if (isUploadingImage) return
-//
-//        val userId = AuthManager.shared.userId
-//        if (userId.isEmpty()) {
-//            Toast.makeText(context, "You must be logged in to update your profile", Toast.LENGTH_SHORT).show()
-//            return
-//        }
-//
-//        isUploadingImage = true
-//        // Show a loading indicator
-//        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
-//
-//        cloudinaryModel.uploadImage(
-//            bitmap = bitmap,
-//            gameId = "profile_${userId}", // Use unique ID for profiles
-//            onSuccess = { imageUrl ->
-//                isUploadingImage = false
-//                if (!imageUrl.isNullOrBlank()) {
-//                    // Update the user object with the new image URL
-//                    user = user?.copy(profileImageUrl = imageUrl)
-//
-//                    // Update Firestore
-//                    updateUserField("profileImageUrl", imageUrl)
-//                    Log.d(TAG, "Profile picture uploaded successfully: $imageUrl")
-//
-//                    // Show success message
-//                    activity?.runOnUiThread {
-//                        Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
-//                    }
-//                } else {
-//                    activity?.runOnUiThread {
-//                        Toast.makeText(context, "Failed to upload profile picture", Toast.LENGTH_SHORT).show()
-//                    }
-//                }
-//            },
-//            onError = { error ->
-//                isUploadingImage = false
-//                Log.e(TAG, "Error uploading profile picture: $error")
-//                activity?.runOnUiThread {
-//                    Toast.makeText(context, "Error uploading profile picture: $error", Toast.LENGTH_SHORT).show()
-//                }
-//            }
-//        )
+        if (isUploadingImage) return
+
+        val userId = AuthManager.shared.userId
+        if (userId.isEmpty()) {
+            Toast.makeText(context, "You must be logged in to update your profile", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        isUploadingImage = true
+        // Show a loading indicator
+        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+
+        Model.shared.uploadImage(bitmap, gameId = "profile_${userId}",
+            { imageUrl ->
+                isUploadingImage = false
+                if (!imageUrl.isNullOrBlank()) {
+                    // Update the user object with the new image URL
+                    user = user?.copy(profileImageUrl = imageUrl)
+
+                    // Update Firestore
+                    updateUserField("profileImageUrl", imageUrl)
+                    Log.d(TAG, "Profile picture uploaded successfully: $imageUrl")
+
+                    // Show success message
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        Toast.makeText(context, "Failed to upload profile picture", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            { error ->
+                isUploadingImage = false
+                Log.e(TAG, "Error uploading profile picture: $error")
+                activity?.runOnUiThread {
+                    Toast.makeText(context, "Error uploading profile picture: $error", Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
     }
 
     private fun setupClickListeners() {
@@ -163,23 +160,19 @@ class ProfileFragment : Fragment() {
             return
         }
 
-        db.collection("users").document(userId).get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    user = User.fromMap(document.data ?: mapOf(), userId)
-                    updateUI()
+        Model.shared.getUserById(userId,
+            { fetchedUser ->
+                user = fetchedUser
+                updateUI()
 
-                    // Log the profile data to debug
-                    Log.d(TAG, "Fetched user profile: ${user}")
-                    Log.d(TAG, "Profile image URL: ${user?.profileImageUrl}")
-                } else {
-                    Log.e(TAG, "User document doesn't exist")
-                }
+                Log.d(TAG, "Fetched user profile: ${user}")
+                Log.d(TAG, "Profile image URL: ${user?.profileImageUrl}")
+            },
+            { error ->
+                Log.e(TAG, "Error loading profile: ${error}")
+                Toast.makeText(context, "Error loading profile: ${error}", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error loading profile: ${e.message}")
-                Toast.makeText(context, "Error loading profile: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        )
     }
 
     private fun updateUI() {
@@ -211,15 +204,11 @@ class ProfileFragment : Fragment() {
         val userId = AuthManager.shared.userId
         if (userId.isEmpty()) return
 
-        db.collection("users").document(userId)
-            .update(field, value)
-            .addOnSuccessListener {
-                Log.d(TAG, "User field $field updated successfully")
+        Model.shared.updateUser(userId, field, value,
+            { result ->
+                Toast.makeText(context, result, Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to update profile: ${e.message}")
-                Toast.makeText(context, "Failed to update profile: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        )
     }
 
     private fun logout() {
