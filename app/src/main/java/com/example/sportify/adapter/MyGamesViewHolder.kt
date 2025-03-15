@@ -28,7 +28,7 @@ class MyGamesViewHolder(
         binding.gameLocation.text = game?.location
 
         // Display approvals count
-        binding.approvalsCount.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
+        binding.approvalsCount.text = "${game?.approvals?.size ?: 0} / ${game?.numberOfPlayers ?: 0}"
 
         // Set up delete and edit buttons
         binding.deleteGameButton.apply {

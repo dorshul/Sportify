@@ -5,6 +5,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
 import com.example.sportify.databinding.PublicGameCardBinding
+import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Game
 import com.example.sportify.model.Model
 import com.example.sportify.model.WeatherService
@@ -23,11 +24,11 @@ class PublicGamesViewHolder(
             setOnClickListener {
                 (tag as? Int)?.let { tag ->
                     game?.let {
-                        it.isApproved = !it.isApproved
-                        if (it.isApproved) {
-                            it.approvals = (it.approvals ?: 0) + 1
-                        } else if (it.approvals > 0) {
-                            it.approvals = (game?.approvals ?: 0) - 1
+                        val isAlreadyApproved = it.approvals.contains(AuthManager.shared.userId)
+                        if (isAlreadyApproved) {
+                            it.approvals.remove(AuthManager.shared.userId)
+                        } else {
+                            it.approvals.add(AuthManager.shared.userId)
                         }
                     }
 
@@ -48,14 +49,16 @@ class PublicGamesViewHolder(
         binding.gameDescription.text = game?.description ?: ""
         binding.gameLocation.text = game?.location
 
+        val isApprovedByUser = game?.approvals?.contains(AuthManager.shared.userId) ?: false
+
         // Set approval counts and button state
-        binding.approvalsCount.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
+        binding.approvalsCount.text = "${game?.approvals?.size ?: 0} / ${game?.numberOfPlayers ?: 0}"
         binding.approvalIcon.apply {
             setImageResource(
-                if (game?.isApproved == true) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
+                if (isApprovedByUser) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
             )
             tag = position
-            isEnabled = game?.isApproved == true || game?.approvals != game?.numberOfPlayers
+            isEnabled = isApprovedByUser || game?.approvals?.size != game?.numberOfPlayers
         }
 
         // Display game image

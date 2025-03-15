@@ -109,11 +109,10 @@ class AddGameFragment : Fragment() {
             id = game?.id ?: UUID.randomUUID().toString(),
             userId = game?.userId ?: AuthManager.shared.userId,
             pictureUrl = game?.pictureUrl ?: "@drawable/take_picture", // Keep original URL for now
-            approvals = game?.approvals ?: 0,
+            approvals = game?.approvals ?: mutableListOf(),
             location = location,
             description = binding?.descriptionText?.text?.toString() ?: "",
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
-            isApproved = game?.isApproved ?: false,
             // Only keep weather data if location didn't change
             weatherTemp = if (shouldClearWeather) null else game?.weatherTemp,
             weatherDescription = if (shouldClearWeather) null else game?.weatherDescription,

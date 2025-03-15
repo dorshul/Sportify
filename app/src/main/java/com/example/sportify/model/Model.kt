@@ -99,7 +99,6 @@ class Model private constructor() {
                     description = game.description,
                     numberOfPlayers = game.numberOfPlayers,
                     approvals = game.approvals,
-                    isApproved = game.isApproved,
                     lastUpdated = game.lastUpdated,
                     weatherTemp = weatherInfo.formattedTemperature(),
                     weatherDescription = weatherInfo.description,
@@ -193,9 +192,6 @@ class Model private constructor() {
     }
 
     fun addGame(game: Game, image: Bitmap?, callback: EmptyCallback) {
-        // Set the user ID to the current authenticated user
-        val gameWithUserId = game.copy(userId = AuthManager.shared.userId)
-
         if (image != null) {
             // First upload the image
             cloudinaryModel.uploadImage(
@@ -204,7 +200,7 @@ class Model private constructor() {
                 onSuccess = { uri ->
                     if (!uri.isNullOrBlank()) {
                         // Update game with new image URL
-                        val gameWithImage = gameWithUserId.copy(pictureUrl = uri)
+                        val gameWithImage = game.copy(pictureUrl = uri)
 
                         // Now save the game with the image URL
                         firebaseModel.addGame(gameWithImage) {
@@ -218,17 +214,17 @@ class Model private constructor() {
                         }
                     } else {
                         // Image upload failed, save game without changing URL
-                        saveGameToFirebaseAndLocal(gameWithUserId, callback)
+                        saveGameToFirebaseAndLocal(game, callback)
                     }
                 },
                 onError = {
                     // Image upload error, save game without changing URL
-                    saveGameToFirebaseAndLocal(gameWithUserId, callback)
+                    saveGameToFirebaseAndLocal(game, callback)
                 }
             )
         } else {
             // No image to upload, just save the game
-            saveGameToFirebaseAndLocal(gameWithUserId, callback)
+            saveGameToFirebaseAndLocal(game, callback)
         }
     }
 
@@ -299,7 +295,6 @@ class Model private constructor() {
             description = game.description,
             numberOfPlayers = game.numberOfPlayers,
             approvals = game.approvals,
-            isApproved = game.isApproved,
             lastUpdated = System.currentTimeMillis(), // Update timestamp to force refresh
             weatherTemp = null,
             weatherDescription = null,
@@ -388,7 +383,6 @@ class Model private constructor() {
                     description = game.description,
                     numberOfPlayers = game.numberOfPlayers,
                     approvals = game.approvals,
-                    isApproved = game.isApproved,
                     lastUpdated = game.lastUpdated,
                     weatherTemp = weatherInfo.formattedTemperature(),
                     weatherDescription = weatherInfo.description,
@@ -424,7 +418,6 @@ class Model private constructor() {
                         description = game.description,
                         numberOfPlayers = game.numberOfPlayers,
                         approvals = game.approvals,
-                        isApproved = game.isApproved,
                         lastUpdated = game.lastUpdated,
                         weatherTemp = null,
                         weatherDescription = null,

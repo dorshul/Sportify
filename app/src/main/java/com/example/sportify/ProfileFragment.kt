@@ -27,7 +27,7 @@ class ProfileFragment : Fragment() {
     var previousBitmap: Bitmap? = null
     private val db = Firebase.firestore
     private var user: User? = null
-    private val cloudinaryModel = CloudinaryModel()
+//    private val cloudinaryModel = CloudinaryModel()
     private val TAG = "ProfileFragment"
     private var isUploadingImage = false
 
@@ -54,7 +54,7 @@ class ProfileFragment : Fragment() {
                 binding?.userPicture?.setImageBitmap(bitmap)
 
                 // Upload the new profile picture
-                uploadProfilePicture(bitmap)
+//                uploadProfilePicture(bitmap)
             } else {
                 // Camera was closed, restore the previous image
                 binding?.userPicture?.setImageBitmap(previousBitmap)
@@ -63,49 +63,49 @@ class ProfileFragment : Fragment() {
     }
 
     private fun uploadProfilePicture(bitmap: Bitmap) {
-        if (isUploadingImage) return
-
-        val userId = AuthManager.shared.userId
-        if (userId.isEmpty()) {
-            Toast.makeText(context, "You must be logged in to update your profile", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        isUploadingImage = true
-        // Show a loading indicator
-        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
-
-        cloudinaryModel.uploadImage(
-            bitmap = bitmap,
-            gameId = "profile_${userId}", // Use unique ID for profiles
-            onSuccess = { imageUrl ->
-                isUploadingImage = false
-                if (!imageUrl.isNullOrBlank()) {
-                    // Update the user object with the new image URL
-                    user = user?.copy(profileImageUrl = imageUrl)
-
-                    // Update Firestore
-                    updateUserField("profileImageUrl", imageUrl)
-                    Log.d(TAG, "Profile picture uploaded successfully: $imageUrl")
-
-                    // Show success message
-                    activity?.runOnUiThread {
-                        Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    activity?.runOnUiThread {
-                        Toast.makeText(context, "Failed to upload profile picture", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            },
-            onError = { error ->
-                isUploadingImage = false
-                Log.e(TAG, "Error uploading profile picture: $error")
-                activity?.runOnUiThread {
-                    Toast.makeText(context, "Error uploading profile picture: $error", Toast.LENGTH_SHORT).show()
-                }
-            }
-        )
+//        if (isUploadingImage) return
+//
+//        val userId = AuthManager.shared.userId
+//        if (userId.isEmpty()) {
+//            Toast.makeText(context, "You must be logged in to update your profile", Toast.LENGTH_SHORT).show()
+//            return
+//        }
+//
+//        isUploadingImage = true
+//        // Show a loading indicator
+//        Toast.makeText(context, "Uploading profile picture...", Toast.LENGTH_SHORT).show()
+//
+//        cloudinaryModel.uploadImage(
+//            bitmap = bitmap,
+//            gameId = "profile_${userId}", // Use unique ID for profiles
+//            onSuccess = { imageUrl ->
+//                isUploadingImage = false
+//                if (!imageUrl.isNullOrBlank()) {
+//                    // Update the user object with the new image URL
+//                    user = user?.copy(profileImageUrl = imageUrl)
+//
+//                    // Update Firestore
+//                    updateUserField("profileImageUrl", imageUrl)
+//                    Log.d(TAG, "Profile picture uploaded successfully: $imageUrl")
+//
+//                    // Show success message
+//                    activity?.runOnUiThread {
+//                        Toast.makeText(context, "Profile picture updated", Toast.LENGTH_SHORT).show()
+//                    }
+//                } else {
+//                    activity?.runOnUiThread {
+//                        Toast.makeText(context, "Failed to upload profile picture", Toast.LENGTH_SHORT).show()
+//                    }
+//                }
+//            },
+//            onError = { error ->
+//                isUploadingImage = false
+//                Log.e(TAG, "Error uploading profile picture: $error")
+//                activity?.runOnUiThread {
+//                    Toast.makeText(context, "Error uploading profile picture: $error", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//        )
     }
 
     private fun setupClickListeners() {
