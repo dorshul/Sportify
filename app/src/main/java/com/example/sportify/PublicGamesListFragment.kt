@@ -25,7 +25,6 @@ class PublicGamesListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         binding = FragmentPublicGamesListBinding.inflate(inflater, container, false)
 
         binding?.recyclerView?.setHasFixedSize(true)
@@ -47,7 +46,6 @@ class PublicGamesListFragment : Fragment() {
 
         adapter?.listener = object : OnPublicGameClickListener {
             override fun onApprovalClicked(position: Int) {
-                Log.d("TAG", "On click Activity listener on position $position")
                 adapter?.onApprovalClicked(position)
             }
         }

@@ -53,7 +53,6 @@ class MyGamesViewHolder(
     }
 
     private fun updateWeatherDisplay() {
-        // Skip if game is null
         val currentGame = game ?: return
 
         // If we already have weather data, display it
@@ -64,7 +63,6 @@ class MyGamesViewHolder(
             return
         }
 
-        // If we're already fetching weather, show loading
         if (weatherRequestInProgress) {
             binding.gameWeather.text = "Loading weather..."
             binding.gameWeather.visibility = View.VISIBLE
@@ -78,30 +76,24 @@ class MyGamesViewHolder(
                 binding.gameWeather.text = cachedWeather.formatForDisplay()
                 binding.gameWeather.visibility = View.VISIBLE
 
-                // We should still update the game object in the database with this weather data
-                // But we don't need to wait for it or show loading
                 updateGameWithCachedWeather(currentGame, cachedWeather)
                 return
             }
         }
 
-        // If we got here, we need to fetch weather - show loading state
         binding.gameWeather.text = "Trying to load weather..."
         binding.gameWeather.visibility = View.VISIBLE
         weatherRequestInProgress = true
 
-        // Fetch weather data
         Model.shared.fetchWeatherForGame(currentGame) { success ->
             weatherRequestInProgress = false
 
-            // Only update UI if view is still attached and position hasn't changed
             if (binding.root.isAttachedToWindow && this.position == position) {
                 if (success) {
-                    // Get latest game data with weather
                     Model.shared.getGameById(currentGame.id) { updatedGame ->
                         if (binding.root.isAttachedToWindow && this.position == position) {
                             updatedGame?.let {
-                                game = it // Update our local reference
+                                game = it
                                 val weatherEmoji = getWeatherEmoji(it.weatherIcon)
                                 binding.gameWeather.text = "${it.weatherTemp} $weatherEmoji"
                             }
@@ -121,22 +113,20 @@ class MyGamesViewHolder(
             weatherIcon = weather.icon
         )
 
-        // Update in database without UI callbacks
         Model.shared.addGame(updatedGame, null) { }
     }
 
-    // Helper method to get weather emoji
     private fun getWeatherEmoji(icon: String?): String {
         if (icon.isNullOrEmpty()) return "☀️"
 
         return when {
-            icon.contains("01") -> "☀️" // clear sky
-            icon.contains("02") -> "⛅" // few clouds
-            icon.contains("03") || icon.contains("04") -> "☁️" // clouds
-            icon.contains("09") || icon.contains("10") -> "🌧️" // rain
-            icon.contains("11") -> "⛈️" // thunderstorm
-            icon.contains("13") -> "❄️" // snow
-            icon.contains("50") -> "🌫️" // mist
+            icon.contains("01") -> "☀️"
+            icon.contains("02") -> "⛅"
+            icon.contains("03") || icon.contains("04") -> "☁️"
+            icon.contains("09") || icon.contains("10") -> "🌧️"
+            icon.contains("11") -> "⛈️"
+            icon.contains("13") -> "❄️"
+            icon.contains("50") -> "🌫️"
             else -> "🌤️" // default
         }
     }

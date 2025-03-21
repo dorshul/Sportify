@@ -22,7 +22,6 @@ class SplashFragment : Fragment() {
     ): View? {
         binding = FragmentSplashBinding.inflate(inflater, container, false)
 
-        // Delay for splash screen effect (2 seconds)
         handler.postDelayed({
             checkAuthenticationStatus()
         }, 2000)
@@ -32,10 +31,8 @@ class SplashFragment : Fragment() {
 
     private fun checkAuthenticationStatus() {
         if (AuthManager.shared.isSignedIn) {
-            // User is already signed in, navigate to main content
             Navigation.findNavController(requireView()).navigate(R.id.action_splashFragment_to_publicGamesListFragment)
         } else {
-            // User is not signed in, navigate to login
             Navigation.findNavController(requireView()).navigate(R.id.action_splashFragment_to_loginFragment)
         }
     }

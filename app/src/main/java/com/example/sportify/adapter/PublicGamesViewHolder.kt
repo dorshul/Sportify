@@ -22,25 +22,41 @@ class PublicGamesViewHolder(
     init {
         binding.approvalIcon?.apply {
             setOnClickListener {
-                (tag as? Int)?.let { tag ->
-                    game?.let {
-                        val isAlreadyApproved = it.approvals.contains(AuthManager.shared.userId)
-                        if (isAlreadyApproved) {
-                            it.approvals.remove(AuthManager.shared.userId)
-                        } else {
-                            it.approvals.add(AuthManager.shared.userId)
-                        }
-                    }
+                (tag as? Int)?.let { position ->
+                    game?.let { currentGame ->
+                        val userId = AuthManager.shared.userId
+                        val isAlreadyApproved = currentGame.approvals.contains(userId)
 
-                    Model.shared.addGame(game!!, null) {
-                        listener?.onApprovalClicked(tag)
+                        val updatedApprovals = currentGame.approvals.toMutableList()
+
+                        if (isAlreadyApproved) {
+                            updatedApprovals.remove(userId)
+                        } else {
+                            updatedApprovals.add(userId)
+                        }
+
+                        val updatedGame = currentGame.copy(approvals = updatedApprovals)
+
+                        updateApprovalUI(updatedApprovals.contains(userId), updatedApprovals.size)
+
+                        Model.shared.addGame(updatedGame, null) {
+                            listener?.onApprovalClicked(position)
+                        }
                     }
                 }
             }
         }
     }
 
-    // Update the bind method for more stable weather display
+    private fun updateApprovalUI(isApproved: Boolean, approvalCount: Int) {
+        binding.approvalIcon.setImageResource(
+            if (isApproved) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
+        )
+        binding.approvalsCount.text = "$approvalCount / ${game?.numberOfPlayers ?: 0}"
+    }
+
+
+
     fun bind(game: Game?, position: Int) {
         if (game?.userId != null) {
             Model.shared.getUserById(userId = game.userId,
@@ -52,7 +68,6 @@ class PublicGamesViewHolder(
                 }
             )
         }
-
 
         this.game = game
         this.position = position

@@ -26,7 +26,6 @@ class MyGamesListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         binding = FragmentMyGamesListBinding.inflate(inflater, container, false)
 
         binding?.recyclerView?.setHasFixedSize(true)

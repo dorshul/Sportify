@@ -42,7 +42,6 @@ class PublicGamesRecyclerAdapter(private var games: List<Game>?): RecyclerView.A
         notifyItemChanged(position)
     }
 
-    // DiffUtil class to handle efficient updates
     private class GameDiffCallback(
         private val oldList: List<Game>,
         private val newList: List<Game>
