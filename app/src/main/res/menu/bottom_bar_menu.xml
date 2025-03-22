@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/publicGamesListFragment"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Find games" />
+    <item
+        android:id="@+id/addGameFragment"
+        android:icon="@android:drawable/ic_input_add"
+        android:title="Create game" />
+    <item
+        android:id="@+id/myGamesListFragment"
+        android:icon="@drawable/ic_widgets"
+        android:title="My games" />
+    <item
+        android:id="@+id/profileFragment"
+        android:icon="@drawable/ic_profile"
+        android:title="Profile" />
+</menu>

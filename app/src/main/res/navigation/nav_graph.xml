@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/publicGamesListFragment">
+    <fragment
+        android:id="@+id/publicGamesListFragment"
+        android:name="com.example.sportify.PublicGamesListFragment"
+        tools:layout="@layout/fragment_public_games_list"
+        android:label="Games List" />
+    <fragment
+        android:id="@+id/addGameFragment"
+        android:name="com.example.sportify.AddGameFragment"
+        tools:layout="@layout/fragment_add_game"
+        android:label="Add Game" >
+        <argument
+            android:name="gameId"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null"
+            />
+    </fragment>
+    <fragment
+        android:id="@+id/myGamesListFragment"
+        android:name="com.example.sportify.MyGamesListFragment"
+        tools:layout="@layout/fragment_my_games_list"
+        android:label="temp1">
+        <action
+            android:id="@+id/action_myGamesListFragment_to_addGameFragment"
+            app:destination="@id/addGameFragment"
+            app:launchSingleTop="true"
+            app:popUpTo="@id/myGamesListFragment"
+            app:popUpToInclusive="false">
+            <argument
+                android:name="gameId"
+                app:argType="string" />
+        </action>
+    </fragment>
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.example.sportify.ProfileFragment"
+        tools:layout="@layout/fragment_profile"
+        android:label="Profile" />
+</navigation>
