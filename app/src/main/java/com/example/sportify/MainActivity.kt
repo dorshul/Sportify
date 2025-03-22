@@ -1,17 +1,22 @@
+// Update: app/src/main/java/com/example/sportify/MainActivity.kt
+
 package com.example.sportify
 
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.navigation.NavController
+import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.NavigationUI
+import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Game
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -68,6 +73,22 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 else -> false
+            }
+        }
+
+        setupNavigationListener(bottomNavigationView)
+    }
+
+    private fun setupNavigationListener(bottomNavigationView: BottomNavigationView) {
+        navController?.addOnDestinationChangedListener { _, destination, _ ->
+            // Hide bottom navigation on authentication screens
+            when (destination.id) {
+                R.id.loginFragment, R.id.registerFragment, R.id.forgotPasswordFragment -> {
+                    bottomNavigationView.visibility = View.GONE
+                }
+                else -> {
+                    bottomNavigationView.visibility = View.VISIBLE
+                }
             }
         }
     }

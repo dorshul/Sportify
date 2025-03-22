@@ -9,11 +9,13 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.navigation.Navigation
 import com.example.sportify.databinding.FragmentAddGameBinding
+import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Model
 import com.example.sportify.model.Game
 import com.squareup.picasso.Picasso
@@ -71,9 +73,14 @@ class AddGameFragment : Fragment() {
     }
 
     private fun onSaveClicked(view: View) {
+        if (AuthManager.shared.userId.isEmpty()) {
+            Toast.makeText(context, "You must be logged in to create games", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         game = Game(
             id = game?.id ?: UUID.randomUUID().toString(),
-            userId =  game?.userId ?: UUID.randomUUID().toString(),
+            userId =  game?.userId ?: AuthManager.shared.userId, // Use current user's ID
             pictureUrl = game?.pictureUrl ?: "@drawable/take_picture",
             approvals = game?.approvals ?: 0,
             location = binding?.locationText?.text?.toString() ?: "",
@@ -81,6 +88,7 @@ class AddGameFragment : Fragment() {
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
             isApproved = game?.isApproved ?: false,
         )
+
 
         if (didSetGameImage) {
             binding?.takePictureImageView?.isDrawingCacheEnabled = true

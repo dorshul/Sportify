@@ -7,21 +7,39 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.navigation.Navigation
 import com.example.sportify.databinding.FragmentProfileBinding
+import com.example.sportify.model.AuthManager
+import com.example.sportify.model.dao.User
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
+import com.squareup.picasso.Picasso
 
 class ProfileFragment : Fragment() {
     private var binding: FragmentProfileBinding? = null
     private var cameraLauncher: ActivityResultLauncher<Void?>? = null
     var previousBitmap: Bitmap? = null
+    private val db = Firebase.firestore
+    private var user: User? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentProfileBinding.inflate(inflater, container, false)
+
+        setupCameraLauncher()
+        setupClickListeners()
+        fetchUserProfile()
+
+        return binding?.root
+    }
+
+    private fun setupCameraLauncher() {
         val drawable = ContextCompat.getDrawable(requireContext(), R.drawable.avatar)
         previousBitmap = (drawable as BitmapDrawable).bitmap
         cameraLauncher = registerForActivityResult((ActivityResultContracts.TakePicturePreview())) { bitmap ->
@@ -29,14 +47,19 @@ class ProfileFragment : Fragment() {
                 // Update the ImageView with the new image and save it as the previous image
                 previousBitmap = bitmap
                 binding?.userPicture?.setImageBitmap(bitmap)
+                // TODO: Upload profile picture to Firebase Storage
             } else {
                 // Camera was closed, restore the previous image
                 binding?.userPicture?.setImageBitmap(previousBitmap)
             }
         }
+    }
+
+    private fun setupClickListeners() {
         binding?.editUserPictureButton?.setOnClickListener {
             cameraLauncher?.launch(null)
         }
+
         binding?.nameEditButton?.setOnClickListener {
             if (binding?.nameEditText?.visibility == View.GONE) {
                 // Switch to EditText
@@ -46,10 +69,14 @@ class ProfileFragment : Fragment() {
                 binding?.nameEditButton?.setImageResource(R.drawable.ic_save) // Change to save icon
             } else {
                 // Save changes and switch back to TextView
-                binding?.nameTextValue?.text = binding?.nameEditText?.text.toString()
+                val newName = binding?.nameEditText?.text.toString()
+                binding?.nameTextValue?.text = newName
                 binding?.nameEditText?.visibility = View.GONE
                 binding?.nameTextValue?.visibility = View.VISIBLE
                 binding?.nameEditButton?.setImageResource(R.drawable.ic_edit) // Change back to edit icon
+
+                // Update name in Firestore
+                updateUserField("name", newName)
             }
         }
 
@@ -61,20 +88,75 @@ class ProfileFragment : Fragment() {
                 binding?.ageTextValue?.visibility = View.GONE
                 binding?.ageEditButton?.setImageResource(R.drawable.ic_save) // Change to save icon
             } else {
-                // Save changes and switch back to TextView
-                binding?.ageTextValue?.text = binding?.ageEditText?.text.toString()
+                val newAge = binding?.ageEditText?.text.toString()
+                binding?.ageTextValue?.text = newAge
                 binding?.ageEditText?.visibility = View.GONE
                 binding?.ageTextValue?.visibility = View.VISIBLE
                 binding?.ageEditButton?.setImageResource(R.drawable.ic_edit) // Change back to edit icon
+
+                updateUserField("age", newAge.toIntOrNull() ?: 0)
             }
         }
-        
-        return binding?.root
+
+        binding?.profileFragmentLogoutButton?.setOnClickListener {
+            logout()
+        }
+    }
+
+    private fun fetchUserProfile() {
+        val userId = AuthManager.shared.userId
+        if (userId.isEmpty()) {
+            navigateToLogin()
+            return
+        }
+
+        db.collection("users").document(userId).get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    user = User.fromMap(document.data ?: mapOf(), userId)
+                    updateUI()
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Error loading profile: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun updateUI() {
+        binding?.nameTextValue?.text = user?.name ?: ""
+        binding?.ageTextValue?.text = user?.age?.toString() ?: ""
+
+        if (!user?.profileImageUrl.isNullOrEmpty()) {
+            Picasso.get()
+                .load(user?.profileImageUrl)
+                .placeholder(R.drawable.avatar)
+                .into(binding?.userPicture)
+        }
+    }
+
+    private fun updateUserField(field: String, value: Any) {
+        val userId = AuthManager.shared.userId
+        if (userId.isEmpty()) return
+
+        db.collection("users").document(userId)
+            .update(field, value)
+            .addOnFailureListener { e ->
+                Toast.makeText(context, "Failed to update profile: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun logout() {
+        AuthManager.shared.signOut()
+        navigateToLogin()
+    }
+
+    private fun navigateToLogin() {
+        val navController = Navigation.findNavController(requireActivity(), R.id.main_nav_host)
+        navController.navigate(R.id.loginFragment)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         binding = null
     }
-
 }
