@@ -47,6 +47,7 @@ class MainActivity : AppCompatActivity() {
         navController = navHostController?.navController
 
         val bottomNavigationView: BottomNavigationView = findViewById(R.id.bottom_bar)
+        bottomNavigationView.visibility = View.GONE
         navController?.let { NavigationUI.setupWithNavController(bottomNavigationView, it) }
         bottomNavigationView.setOnItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -81,9 +82,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupNavigationListener(bottomNavigationView: BottomNavigationView) {
         navController?.addOnDestinationChangedListener { _, destination, _ ->
-            // Hide bottom navigation on authentication screens
             when (destination.id) {
-                R.id.loginFragment, R.id.registerFragment, R.id.forgotPasswordFragment -> {
+                R.id.splashFragment, R.id.loginFragment, R.id.registerFragment, R.id.forgotPasswordFragment -> {
                     bottomNavigationView.visibility = View.GONE
                 }
                 else -> {

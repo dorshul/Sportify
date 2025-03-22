@@ -95,15 +95,6 @@
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/game_distance"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="500 m"
-                    android:textColor="@color/black"
-                    android:textSize="14sp" />
-
-                <TextView
                     android:id="@+id/game_weather"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

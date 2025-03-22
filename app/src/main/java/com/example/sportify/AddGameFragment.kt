@@ -18,6 +18,7 @@ import com.example.sportify.databinding.FragmentAddGameBinding
 import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Model
 import com.example.sportify.model.Game
+import com.example.sportify.model.WeatherService
 import com.squareup.picasso.Picasso
 import java.util.UUID
 
@@ -27,6 +28,9 @@ class AddGameFragment : Fragment() {
     var game: Game? = null
     var previousBitmap: Bitmap? = null
     private var didSetGameImage = false
+    private var isSaving = false
+    private var originalLocation: String? = null
+    private val TAG = "AddGameFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,8 +57,11 @@ class AddGameFragment : Fragment() {
         val args = AddGameFragmentArgs.fromBundle(requireArguments())
         val gameId = args.gameId
         if (gameId != null) {
-            Model.shared.getGameById(gameId ?: "") {
+            Model.shared.getGameById(gameId) {
                 game = it
+                // Store the original location to check for changes later
+                originalLocation = it?.location
+
                 binding?.descriptionText?.text = Editable.Factory.getInstance().newEditable(game?.description ?: "")
                 binding?.locationText?.text = Editable.Factory.getInstance().newEditable(game?.location ?: "")
                 binding?.numberOfPlayers?.text = Editable.Factory.getInstance().newEditable(game?.numberOfPlayers.toString() ?: "")
@@ -73,36 +80,103 @@ class AddGameFragment : Fragment() {
     }
 
     private fun onSaveClicked(view: View) {
+        if (isSaving) {
+            return // Prevent multiple clicks
+        }
+
         if (AuthManager.shared.userId.isEmpty()) {
             Toast.makeText(context, "You must be logged in to create games", Toast.LENGTH_SHORT).show()
             return
         }
 
-        game = Game(
+        val location = binding?.locationText?.text?.toString()?.trim() ?: ""
+        val locationChanged = location != originalLocation && game != null
+
+        // Show loading state
+        isSaving = true
+        binding?.saveButton?.isEnabled = false
+        binding?.saveButton?.text = "Saving..."
+
+        // Check if location is valid
+        val isValidLocation = true // Simplified for now - remove custom validation
+
+        // If location changed or is invalid, clear the weather data
+        val shouldClearWeather = locationChanged
+
+        // Create updated game object
+        val updatedGame = Game(
             id = game?.id ?: UUID.randomUUID().toString(),
-            userId =  game?.userId ?: AuthManager.shared.userId, // Use current user's ID
-            pictureUrl = game?.pictureUrl ?: "@drawable/take_picture",
-            approvals = game?.approvals ?: 0,
-            location = binding?.locationText?.text?.toString() ?: "",
+            userId = game?.userId ?: AuthManager.shared.userId,
+            pictureUrl = game?.pictureUrl ?: "@drawable/take_picture", // Keep original URL for now
+            approvals = game?.approvals ?: mutableListOf(),
+            location = location,
             description = binding?.descriptionText?.text?.toString() ?: "",
             numberOfPlayers = binding?.numberOfPlayers?.text?.toString()?.toIntOrNull() ?: 0,
-            isApproved = game?.isApproved ?: false,
+            // Only keep weather data if location didn't change
+            weatherTemp = if (shouldClearWeather) null else game?.weatherTemp,
+            weatherDescription = if (shouldClearWeather) null else game?.weatherDescription,
+            weatherIcon = if (shouldClearWeather) null else game?.weatherIcon
         )
 
+        // Update the game reference
+        game = updatedGame
 
-        if (didSetGameImage) {
-            binding?.takePictureImageView?.isDrawingCacheEnabled = true
-            binding?.takePictureImageView?.buildDrawingCache()
-            val bitmap = (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
-
-            Model.shared.addGame(game!!, bitmap) {
-                Navigation.findNavController(view).popBackStack()
-            }
-        } else {
-            Model.shared.addGame(game!!, null) {
-                Navigation.findNavController(view).popBackStack()
-            }
+        // If location changed, let's invalidate the cache for the old location
+        if (locationChanged && originalLocation?.isNotEmpty() == true) {
+            WeatherService.removeFromCache(originalLocation!!)
         }
 
+        // Prepare bitmap if image was changed
+        val bitmap = if (didSetGameImage) {
+            binding?.takePictureImageView?.isDrawingCacheEnabled = true
+            binding?.takePictureImageView?.buildDrawingCache()
+            (binding?.takePictureImageView?.drawable as BitmapDrawable).bitmap
+        } else null
+
+        // Now save the game and handle image/weather
+        handleGameSave(view, updatedGame, bitmap, location, locationChanged)
+    }
+
+    private fun handleGameSave(view: View, gameToSave: Game, bitmap: Bitmap?, location: String, locationChanged: Boolean) {
+        Log.d(TAG, "Saving game with${if (bitmap != null) "" else "out"} new image")
+
+        // Use the original Model.addGame method
+        Model.shared.addGame(gameToSave, bitmap) {
+            Log.d(TAG, "Game saved, now handling weather")
+
+            // After save is done, handle weather if needed
+            if (location.isNotEmpty() && locationChanged) {
+                binding?.saveButton?.text = "Updating weather..."
+
+                Model.shared.fetchWeatherForGame(gameToSave, forceRefresh = locationChanged) { weatherSuccess ->
+                    Log.d(TAG, "Weather update ${if (weatherSuccess) "succeeded" else "failed"}")
+
+                    if (!weatherSuccess) {
+                        Toast.makeText(context, "Weather unavailable for this location", Toast.LENGTH_SHORT).show()
+                    }
+
+                    // Always finish, regardless of weather result
+                    activity?.runOnUiThread {
+                        isSaving = false
+                        binding?.saveButton?.isEnabled = true
+                        binding?.saveButton?.text = "Save"
+                        Navigation.findNavController(view).popBackStack()
+                    }
+                }
+            } else {
+                // No weather update needed
+                activity?.runOnUiThread {
+                    isSaving = false
+                    binding?.saveButton?.isEnabled = true
+                    binding?.saveButton?.text = "Save"
+                    Navigation.findNavController(view).popBackStack()
+                }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        binding = null
     }
 }

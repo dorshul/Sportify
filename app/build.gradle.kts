@@ -54,7 +54,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
-
+    implementation(libs.okhttp)
     implementation(libs.androidx.swiperefreshlayout)
 
     implementation(platform(libs.firebase.bom))
@@ -71,6 +71,8 @@ dependencies {
 
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui )
+
+    implementation(libs.google.gson)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

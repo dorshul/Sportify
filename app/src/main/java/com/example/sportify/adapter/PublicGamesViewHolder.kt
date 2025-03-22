@@ -1,13 +1,14 @@
 package com.example.sportify.adapter
 
-import android.widget.ImageButton
-import android.widget.TextView
+import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.example.sportify.OnPublicGameClickListener
 import com.example.sportify.R
 import com.example.sportify.databinding.PublicGameCardBinding
+import com.example.sportify.model.AuthManager
 import com.example.sportify.model.Game
 import com.example.sportify.model.Model
+import com.example.sportify.model.WeatherService
 import com.squareup.picasso.Picasso
 
 class PublicGamesViewHolder(
@@ -15,42 +16,78 @@ class PublicGamesViewHolder(
     listener: OnPublicGameClickListener?
 ): RecyclerView.ViewHolder(binding.root) {
     private var game: Game? = null
+    private var weatherRequestInProgress = false
+    private var position = -1
 
     init {
         binding.approvalIcon?.apply {
             setOnClickListener {
-                (tag as? Int)?.let { tag ->
-                    game?.let {
-                        it.isApproved = !it.isApproved
-                        if (it.isApproved) {
-                            it.approvals = (it.approvals ?: 0) + 1
-                        } else if (it.approvals > 0) {
-                            it.approvals = (game?.approvals ?: 0) - 1
-                        }
-                    }
+                (tag as? Int)?.let { position ->
+                    game?.let { currentGame ->
+                        val userId = AuthManager.shared.userId
+                        val isAlreadyApproved = currentGame.approvals.contains(userId)
 
-                    Model.shared.addGame(game!!, null) {
-                        listener?.onApprovalClicked(tag)
+                        val updatedApprovals = currentGame.approvals.toMutableList()
+
+                        if (isAlreadyApproved) {
+                            updatedApprovals.remove(userId)
+                        } else {
+                            updatedApprovals.add(userId)
+                        }
+
+                        val updatedGame = currentGame.copy(approvals = updatedApprovals)
+
+                        updateApprovalUI(updatedApprovals.contains(userId), updatedApprovals.size)
+
+                        Model.shared.addGame(updatedGame, null) {
+                            listener?.onApprovalClicked(position)
+                        }
                     }
                 }
             }
         }
     }
 
+    private fun updateApprovalUI(isApproved: Boolean, approvalCount: Int) {
+        binding.approvalIcon.setImageResource(
+            if (isApproved) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
+        )
+        binding.approvalsCount.text = "$approvalCount / ${game?.numberOfPlayers ?: 0}"
+    }
+
+
+
     fun bind(game: Game?, position: Int) {
+        if (game?.userId != null) {
+            Model.shared.getUserById(userId = game.userId,
+                { user ->
+                    binding.userDetails.text = "${user?.name}, ${user?.age}"
+                },
+                {
+                    binding.userDetails.text = "Username"
+                }
+            )
+        }
+
         this.game = game
-        binding.userDetails.text = game?.userId
+        this.position = position
+
         binding.gameDescription.text = game?.description ?: ""
         binding.gameLocation.text = game?.location
-        binding.gameWeather.text = "25°C ☀️"
-        binding.approvalsCount.text = "${game?.approvals ?: 0} / ${game?.numberOfPlayers ?: 0}"
+
+        val isApprovedByUser = game?.approvals?.contains(AuthManager.shared.userId) ?: false
+
+        // Set approval counts and button state
+        binding.approvalsCount.text = "${game?.approvals?.size ?: 0} / ${game?.numberOfPlayers ?: 0}"
         binding.approvalIcon.apply {
             setImageResource(
-                if (game?.isApproved == true) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
+                if (isApprovedByUser) R.drawable.ic_thumb_up_fill else R.drawable.ic_thumb_up
             )
             tag = position
-            isEnabled = game?.isApproved == true || game?.approvals != game?.numberOfPlayers
+            isEnabled = isApprovedByUser || game?.approvals?.size != game?.numberOfPlayers
         }
+
+        // Display game image
         game?.pictureUrl?.let {
             if (it.isNotBlank()) {
                 Picasso.get()
@@ -60,5 +97,96 @@ class PublicGamesViewHolder(
             }
         }
 
+        // Handle weather display
+        updateWeatherDisplay()
+    }
+
+    private fun updateWeatherDisplay() {
+        // Skip if game is null
+        val currentGame = game ?: return
+
+        // If we already have weather data, display it
+        if (!currentGame.weatherTemp.isNullOrEmpty()) {
+            val weatherEmoji = getWeatherEmoji(currentGame.weatherIcon)
+            binding.gameWeather.text = "${currentGame.weatherTemp} $weatherEmoji"
+            binding.gameWeather.visibility = View.VISIBLE
+            return
+        }
+
+        // If we're already fetching weather, show loading
+        if (weatherRequestInProgress) {
+            binding.gameWeather.text = "Loading weather..."
+            binding.gameWeather.visibility = View.VISIBLE
+            return
+        }
+
+        // Check if we have cached weather data for this location
+        if (WeatherService.hasValidCache(currentGame.location)) {
+            val cachedWeather = WeatherService.getCachedWeather(currentGame.location)
+            if (cachedWeather != null) {
+                binding.gameWeather.text = cachedWeather.formatForDisplay()
+                binding.gameWeather.visibility = View.VISIBLE
+
+                // We should still update the game object in the database with this weather data
+                // But we don't need to wait for it or show loading
+                updateGameWithCachedWeather(currentGame, cachedWeather)
+                return
+            }
+        }
+
+        // If we got here, we need to fetch weather - show loading state
+        binding.gameWeather.text = "Trying to load weather..."
+        binding.gameWeather.visibility = View.VISIBLE
+        weatherRequestInProgress = true
+
+        // Fetch weather data
+        Model.shared.fetchWeatherForGame(currentGame) { success ->
+            weatherRequestInProgress = false
+
+            // Only update UI if view is still attached and position hasn't changed
+            if (binding.root.isAttachedToWindow && this.position == position) {
+                if (success) {
+                    // Get latest game data with weather
+                    Model.shared.getGameById(currentGame.id) { updatedGame ->
+                        if (binding.root.isAttachedToWindow && this.position == position) {
+                            updatedGame?.let {
+                                game = it // Update our local reference
+                                val weatherEmoji = getWeatherEmoji(it.weatherIcon)
+                                binding.gameWeather.text = "${it.weatherTemp} $weatherEmoji"
+                            }
+                        }
+                    }
+                } else {
+                    binding.gameWeather.text = "Weather unavailable"
+                }
+            }
+        }
+    }
+
+    private fun updateGameWithCachedWeather(game: Game, weather: WeatherService.WeatherInfo) {
+        val updatedGame = game.copy(
+            weatherTemp = weather.formattedTemperature(),
+            weatherDescription = weather.description,
+            weatherIcon = weather.icon
+        )
+
+        // Update in database without UI callbacks
+        Model.shared.addGame(updatedGame, null) { }
+    }
+
+    // Helper method to get weather emoji
+    private fun getWeatherEmoji(icon: String?): String {
+        if (icon.isNullOrEmpty()) return "☀️"
+
+        return when {
+            icon.contains("01") -> "☀️" // clear sky
+            icon.contains("02") -> "⛅" // few clouds
+            icon.contains("03") || icon.contains("04") -> "☁️" // clouds
+            icon.contains("09") || icon.contains("10") -> "🌧️" // rain
+            icon.contains("11") -> "⛈️" // thunderstorm
+            icon.contains("13") -> "❄️" // snow
+            icon.contains("50") -> "🌫️" // mist
+            else -> "🌤️" // default
+        }
     }
 }

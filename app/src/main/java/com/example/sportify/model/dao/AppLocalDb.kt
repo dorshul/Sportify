@@ -4,10 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 import com.example.sportify.base.MyApplication
 import com.example.sportify.model.Game
 
-@Database(entities = [Game::class], version = 6)
+@Database(entities = [Game::class], version = 7)
+@TypeConverters(Converters::class)
 abstract class AppLocalDbRepository: RoomDatabase() {
     abstract fun gamesDao(): GameDao
 }
